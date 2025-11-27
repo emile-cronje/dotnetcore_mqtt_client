@@ -1,0 +1,88 @@
+﻿using System.Text;
+using Newtonsoft.Json;
+
+namespace MqttTestClient.Services.Web;
+
+public class ToDoItemClient
+{
+    private const string _resourcePath = "/api/todoitems/";
+    private readonly HttpClient _httpClient;
+    private readonly IWebClientUrlPool _urlPool;
+    private string _clientUrl;
+
+    public ToDoItemClient(HttpClient httpClient, IWebClientUrlPool urlPool)
+    {
+        _urlPool = urlPool;
+        _httpClient = httpClient;
+    }
+
+    public void Initialise(int? index = 1)
+    {
+        _clientUrl = _urlPool.GetClientUrl(index);
+    }
+
+    public string BuildPostData(string messageId, string clientId, string name, string description,
+        bool isComplete)
+    {
+        var item = new { messageId, clientId, name, description, isComplete };
+        return JsonConvert.SerializeObject(item);
+    }
+
+    public async Task<string> PostAsync(Guid mqttSessionId, string itemData)
+    {
+        var url = $"{_clientUrl}{_resourcePath}";
+        string jsonPayload = JsonConvert.SerializeObject(new { itemData, mqttSessionId });        
+        var payload = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+        var response = await _httpClient.PostAsync(url, payload);
+        return await response.Content.ReadAsStringAsync();
+    }
+
+    public async Task<string> PutAsync(Guid mqttSessionId, long id, string itemData)
+    {
+        var url = $"{_clientUrl}{_resourcePath}{id}";
+        string jsonPayload = JsonConvert.SerializeObject(new { itemData, mqttSessionId });        
+        var payload = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+        var response = await _httpClient.PutAsync(url, payload);
+        return await response.Content.ReadAsStringAsync();
+    }
+
+    public async Task<HttpResponseMessage> GetAllItemsAsync(string clientId)
+    {
+        var url = $"{_clientUrl}{_resourcePath}{clientId}";
+        return await _httpClient.GetAsync(url);
+    }
+
+    public async Task<string> GetItemAsync(long id)
+    {
+        var url = $"{_clientUrl}{_resourcePath}{id}";
+        var response = await _httpClient.GetAsync(url);
+        return await response.Content.ReadAsStringAsync();
+    }
+
+    public async Task<string> GetRemoteItemCountAsync()
+    {
+        var url = $"{_clientUrl}{_resourcePath}count/";
+        var response = await _httpClient.GetAsync(url);
+        return await response.Content.ReadAsStringAsync();
+    }
+
+    public async Task DeleteAsync(long id, string messageId, Guid mqttSessionId)
+    {
+        var url = $"{_clientUrl}{_resourcePath}{id}";
+        string jsonPayload = JsonConvert.SerializeObject(new { messageId, mqttSessionId });
+        var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+        
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, url)
+        {
+            Content = content
+        };
+
+        await _httpClient.SendAsync(request); 
+    }
+
+    public async Task<HttpResponseMessage> DeleteAllAsync()
+    {
+        var url = $"{_clientUrl}{_resourcePath}";
+        return await _httpClient.DeleteAsync(url);
+    }
+}

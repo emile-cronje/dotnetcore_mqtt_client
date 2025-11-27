@@ -1,0 +1,545 @@
+﻿using System.Net.Http.Headers;
+using System.Text;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using MqttTestClient.Controllers;
+using MqttTestClient.DataAccess;
+using MqttTestClient.DataAccess.Pg;
+using MqttTestClient.DataAccess.Sqlite;
+using MqttTestClient.Services;
+using MqttTestClient.Services.Compare;
+using MqttTestClient.Services.MessageBroker;
+using MqttTestClient.Services.Web;
+
+namespace MqttTestClient;
+
+public abstract class Program
+{
+    enum WebUrl
+    {
+        DotNet = 0,                
+        NodeTs = 1,
+        Python = 2        
+    }
+    
+    public static async Task Main(string[] args)
+    {
+        var clientIds = new List<string> { "1", "2", "3", "4" };
+        //clientIds = new List<string> { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };        
+        clientIds = ["1", "2"];
+        //clientIds = new List<string> { "1" };        
+        var dotNetHost = "192.168.10.120"; //stm32
+        var pythonHost = "192.168.10.120"; //stm32        
+        var nodeHost = "192.168.10.120"; //stm32        
+        dotNetHost = "192.168.10.116"; //esp32-s3
+        dotNetHost = "192.168.10.199"; //picow
+
+        //host = "192.168.10.119"; //stm32        
+        dotNetHost = "192.168.10.120"; //stm32 new                
+        //host = "192.168.10.121"; //stm32 old                
+        //host = "192.168.10.103"; //bbb
+        dotNetHost = "192.168.10.184"; //bbb new        
+        //host = "192.168.10.135"; //pib plus
+        dotNetHost = "localhost";
+        dotNetHost = "192.168.10.183"; //pi5
+
+        var pythonPort = 3001;
+        var dotNetPort = 8001; // c#        
+        var nodePort = 3002; // nodejs - ts        
+        var credentials = "foo:bar";
+        var entityInsertCount = 10;
+        var entityUpdateCount = 1;
+        var deletePerEntityTypeCount = 5;        
+        var meterReadingsPerMeterCount = 4;
+        var tasksPerAssetCount = 1;
+        var useSqlite = false;
+        var usePg = !useSqlite;
+        clientIds = ["1", "2", "3", "4"];        
+        clientIds = ["1", "2"];                                                                    
+        //clientIds = ["1"];        
+        //clientIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];        
+
+        // entities
+        var doItems = true;
+        var doAssets = true;
+        var doMeters = true;
+
+        // details
+        var doAssetTasks = true;        
+        var doMeterReadings = true;
+
+        // actions
+        var doMeterAdr = true;        
+        var doUpdate = true;
+        var doDelete = true;
+        
+        // platform
+        bool usePython = true;
+        bool useNode = !usePython;        
+        bool useDotNet = false;        
+        bool usePythonAndNode = usePython && useNode;        
+        bool useDotNetAndNode = useDotNet && useNode;                
+        bool useDotNetAndPython = useDotNet && usePython;        
+        bool useDotNetAndPythonAndNode = useDotNet && usePython && useNode;        
+        
+        int toDoUrlIndex = (int)WebUrl.NodeTs;
+        int assetUrlIndex = (int)WebUrl.NodeTs;
+        int assetTaskUrlIndex = (int)WebUrl.NodeTs;       
+        int meterUrlIndex = (int)WebUrl.NodeTs;        
+        int meterReadingUrlIndex = (int)WebUrl.NodeTs;
+
+        if (usePython)
+        {
+            toDoUrlIndex = (int)WebUrl.Python;
+            assetUrlIndex = (int)WebUrl.Python;
+            assetTaskUrlIndex = (int)WebUrl.Python;       
+            meterUrlIndex = (int)WebUrl.Python;        
+            meterReadingUrlIndex = (int)WebUrl.Python;
+        }
+        
+        if (useNode)
+        {
+            toDoUrlIndex = (int)WebUrl.NodeTs;
+            assetUrlIndex = (int)WebUrl.NodeTs;
+            assetTaskUrlIndex = (int)WebUrl.NodeTs;       
+            meterUrlIndex = (int)WebUrl.NodeTs;        
+            meterReadingUrlIndex = (int)WebUrl.NodeTs;
+        }
+        
+        if (usePythonAndNode)
+        {
+            toDoUrlIndex = (int)WebUrl.Python;
+            assetUrlIndex = (int)WebUrl.NodeTs;
+            assetTaskUrlIndex = (int)WebUrl.NodeTs;       
+            meterUrlIndex = (int)WebUrl.NodeTs;        
+            meterReadingUrlIndex = (int)WebUrl.NodeTs;
+        }
+
+        if (useDotNetAndNode)
+        {
+            toDoUrlIndex = (int)WebUrl.DotNet;
+            assetUrlIndex = (int)WebUrl.NodeTs;
+            assetTaskUrlIndex = (int)WebUrl.NodeTs;       
+            meterUrlIndex = (int)WebUrl.DotNet;        
+            meterReadingUrlIndex = (int)WebUrl.DotNet;
+        }
+
+        if (useDotNetAndPython)
+        {
+            toDoUrlIndex = (int)WebUrl.DotNet;
+            assetUrlIndex = (int)WebUrl.Python;
+            assetTaskUrlIndex = (int)WebUrl.Python;       
+            meterUrlIndex = (int)WebUrl.DotNet;        
+            meterReadingUrlIndex = (int)WebUrl.DotNet;
+        }
+
+        if (useDotNetAndPythonAndNode)
+        {
+            toDoUrlIndex = (int)WebUrl.NodeTs;
+            assetUrlIndex = (int)WebUrl.Python;
+            assetTaskUrlIndex = (int)WebUrl.Python;       
+            meterUrlIndex = (int)WebUrl.DotNet;        
+            meterReadingUrlIndex = (int)WebUrl.DotNet;
+        }
+        
+        var webClientUrls = new List<string>
+                    {
+                        ($"http://{dotNetHost}:{dotNetPort}"),
+                        ($"http://{nodeHost}:{nodePort}"),
+                        ($"http://{pythonHost}:{pythonPort}")                        
+                    };
+
+        if (usePython)
+        {
+            pythonHost = "192.168.10.120"; //stm32
+            pythonHost = "192.168.10.115"; //pico-w            
+            //pythonHost = "192.168.10.174"; //bbb
+            //pythonHost = "192.168.10.198"; //emile-dev            
+            //pythonHost = "192.168.10.183"; //pi5 
+            pythonPort = 8001;            
+
+            webClientUrls =
+            [
+                ($"http://{pythonHost}:{pythonPort}"),
+                ($"http://{pythonHost}:{pythonPort}"),
+                ($"http://{pythonHost}:{pythonPort}")
+            ];
+        }
+        
+        if (useNode)
+        {
+            nodeHost = "localhost";
+            //host = "192.168.10.183"; //pi5      
+            nodeHost = "192.168.10.174"; //bbb new                          
+            //nodeHost = "192.168.10.183"; //pi5
+            //nodeHost = "192.168.10.198"; //emile-dev            
+            nodePort = 3002;
+
+            webClientUrls =
+            [
+                ($"http://{nodeHost}:{nodePort}"),
+                ($"http://{nodeHost}:{nodePort}"),
+                ($"http://{nodeHost}:{nodePort}")
+            ];
+        }
+        
+        if (useDotNet)
+        {
+            dotNetHost = "localhost";
+            
+            webClientUrls =
+            [
+                ($"http://{dotNetHost}:{dotNetPort}"),
+                ($"http://{dotNetHost}:{dotNetPort}"),
+                ($"http://{dotNetHost}:{dotNetPort}")
+            ];
+        }
+
+        if (useDotNetAndNode)
+        {
+            dotNetHost = "localhost";
+            nodeHost = "192.168.10.174";            
+            
+            webClientUrls =
+            [
+                ($"http://{dotNetHost}:{dotNetPort}"),
+                ($"http://{dotNetHost}:{dotNetPort}"),
+                ($"http://{nodeHost}:{nodePort}")
+            ];
+        }
+
+        if (useDotNetAndPython)
+        {
+            dotNetHost = "localhost";
+            pythonHost = "192.168.10.120";            
+            
+            webClientUrls =
+            [
+                ($"http://{dotNetHost}:{dotNetPort}"),
+                ($"http://{dotNetHost}:{dotNetPort}"),
+                ($"http://{pythonHost}:{pythonPort}")
+            ];
+        }
+        
+        if (usePythonAndNode)
+        {
+            nodeHost = "192.168.10.174";
+            //pythonHost = "192.168.10.115"; //esp32            
+            pythonHost = "192.168.10.174"; //stm32
+            pythonPort = 3002;            
+            pythonPort = 8001;
+            
+            webClientUrls =
+            [
+                ($"http://{pythonHost}:{pythonPort}"),
+                ($"http://{nodeHost}:{nodePort}"),
+                ($"http://{nodeHost}:{nodePort}")
+            ];
+        }
+
+        if (useDotNetAndPythonAndNode)
+        {
+            nodeHost = "192.168.10.174";
+//            pythonHost = "192.168.10.115"; //esp32            
+            pythonHost = "192.168.10.120"; //stm32            
+            dotNetHost = "localhost";            
+            
+            webClientUrls =
+            [
+                ($"http://{nodeHost}:{nodePort}"),
+                ($"http://{pythonHost}:{pythonPort}"),
+                ($"http://{dotNetHost}:{dotNetPort}")
+            ];
+        }
+        
+        var testEventContainer = new TestEventContainer();
+        EntityContainer toDoContainer = new();
+        EntityContainer assetContainer = new();        
+        EntityContainer meterContainer = new();                
+        EntityContainer assetTaskContainer = new();                
+        EntityContainer meterReadingContainer = new();                        
+        
+        if (doItems)
+        {
+            testEventContainer.EntityContainers.Add(EntityType.ToDoItem, new EntityContainer());
+            testEventContainer.EntityContainers.TryGetValue(EntityType.ToDoItem, out toDoContainer);
+        }
+
+        if (doAssets)
+        {
+            testEventContainer.EntityContainers.Add(EntityType.Asset, new EntityContainer());
+            testEventContainer.EntityContainers.TryGetValue(EntityType.Asset, out assetContainer);            
+        }
+
+        if (doAssetTasks)
+        {
+            testEventContainer.EntityContainers.Add(EntityType.AssetTask, new EntityContainer());            
+            testEventContainer.EntityContainers.TryGetValue(EntityType.AssetTask, out assetTaskContainer);                                    
+        }
+        
+        if (doMeters)
+        {
+            testEventContainer.EntityContainers.Add(EntityType.Meter, new EntityContainer());            
+            testEventContainer.EntityContainers.TryGetValue(EntityType.Meter, out meterContainer);                        
+        }
+        
+        if (doMeterReadings)
+        {
+            testEventContainer.EntityContainers.Add(EntityType.MeterReading, new EntityContainer());
+            testEventContainer.EntityContainers.TryGetValue(EntityType.MeterReading, out meterReadingContainer);                                    
+        }
+
+        var crudEventContainer = new EntityCrudContainer
+        {
+            DoUpdate = doUpdate,
+            DoDelete = doDelete
+        };
+
+        var mqttBrokers = new List<(string, string)>
+        {
+            ("192.168.10.124", "pib plus"),
+            ("192.168.10.135", "pib"),
+            ("192.168.10.174", "bbb")            
+        };
+
+        var mqttSessionId = Guid.NewGuid();
+
+        var webClientServiceHost = Host.CreateDefaultBuilder(args)
+            .ConfigureServices(services =>
+            {
+                AddDaoService(services, usePg);
+                services.AddSingleton<IWebClientUrlPool>(new WebClientUrlPool(webClientUrls));                
+
+                var assetClientBuilder = services.AddHttpClient("AssetClient");
+                assetClientBuilder.AddStandardResilienceHandler();
+
+                var assetTaskClientBuilder = services.AddHttpClient("AssetTaskClient");
+                assetTaskClientBuilder.AddStandardResilienceHandler();
+
+                var toDoItemClientBuilder = services.AddHttpClient("ToDoItemClient");
+                toDoItemClientBuilder.AddStandardResilienceHandler();
+
+                var meterClientBuilder = services.AddHttpClient("MeterClient");
+                meterClientBuilder.AddStandardResilienceHandler();
+
+                var meterReadingClientBuilder = services.AddHttpClient("MeterReadingClient");
+                meterReadingClientBuilder.AddStandardResilienceHandler();
+
+                services.AddLogging(builder =>
+                {
+                    builder.SetMinimumLevel(LogLevel.Error);
+                });
+
+                services.AddHostedService(provider =>
+                {
+                    var toDoDao = provider.GetRequiredService<IToDoItemDao>();
+                    var assetDao = provider.GetRequiredService<IAssetDao>();
+                    var assetTaskDao = provider.GetRequiredService<IAssetTaskDao>();
+                    var meterDao = provider.GetRequiredService<IMeterDao>();
+                    var meterReadingDao = provider.GetRequiredService<IMeterReadingDao>();
+                    toDoDao.Initialise();
+                    assetDao.Initialise();
+                    assetTaskDao.Initialise();
+                    meterDao.Initialise();
+                    meterReadingDao.Initialise();
+                    var toDoController = new ToDoItemController(toDoDao, toDoContainer, testEventContainer);                    
+                    var assetController = new AssetController(assetDao, assetContainer, testEventContainer);                    
+                    var assetTaskController = new AssetTaskController(assetTaskDao, assetTaskContainer, testEventContainer);                    
+                    var meterController = new MeterController(meterDao, meterReadingDao, meterContainer, testEventContainer);                    
+                    var meterReadingController = new MeterReadingController(meterReadingDao, meterReadingContainer, testEventContainer);                    
+
+                    var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
+
+                    var assetHttpClient = httpClientFactory.CreateClient("AssetClient");
+                    assetHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
+
+                    var assetTaskHttpClient = httpClientFactory.CreateClient("AssetTaskClient");
+                    assetTaskHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
+
+                    var toDoItemHttpClient = httpClientFactory.CreateClient("ToDoItemClient");
+                    toDoItemHttpClient.Timeout = TimeSpan.FromMinutes(5);                                        
+                    toDoItemHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
+
+                    var meterHttpClient = httpClientFactory.CreateClient("MeterClient");
+                    meterHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
+
+                    var meterReadingHttpClient = httpClientFactory.CreateClient("MeterReadingClient");
+                    meterReadingHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
+
+                    var webClientUrlPool = provider.GetRequiredService<IWebClientUrlPool>();
+                    
+                    var toDoItemClient = new ToDoItemClient(toDoItemHttpClient, webClientUrlPool);
+                    toDoItemClient.Initialise(toDoUrlIndex);
+                    
+                    var assetClient = new AssetClient(assetHttpClient, webClientUrlPool);
+                    assetClient.Initialise(assetUrlIndex);
+                    
+                    var assetTaskClient = new AssetTaskClient(assetTaskHttpClient, webClientUrlPool);
+                    assetTaskClient.Initialise(assetTaskUrlIndex);
+                    
+                    var meterClient = new MeterClient(meterHttpClient, webClientUrlPool);
+                    meterClient.Initialise(meterUrlIndex);
+                    
+                    var meterReadingClient = new MeterReadingClient(meterReadingHttpClient, webClientUrlPool);
+                    meterReadingClient.Initialise(meterReadingUrlIndex);                    
+
+                    return new WebClientService(clientIds, entityInsertCount, entityUpdateCount,
+                        deletePerEntityTypeCount,
+                        meterReadingsPerMeterCount, tasksPerAssetCount,
+                        testEventContainer, doItems, doAssets, doAssetTasks, doMeters, doMeterReadings,
+                        toDoItemClient,
+                        assetClient, assetTaskClient, meterClient, meterReadingClient,
+                        crudEventContainer, toDoController, assetController, meterController, assetTaskController,
+                        meterReadingController, mqttSessionId);
+                });
+            }).Build();
+
+        var mqttServiceHost = Host.CreateDefaultBuilder(args)
+            .ConfigureServices(services =>
+            {
+                AddDaoService(services, usePg);
+                services.AddSingleton<IWebClientUrlPool>(new WebClientUrlPool(webClientUrls));                
+
+                services.AddHostedService(provider =>
+                {
+                    var toDoDao = provider.GetRequiredService<IToDoItemDao>();
+                    var assetDao = provider.GetRequiredService<IAssetDao>();
+                    var assetTaskDao = provider.GetRequiredService<IAssetTaskDao>();
+                    var meterDao = provider.GetRequiredService<IMeterDao>();
+                    var meterReadingDao = provider.GetRequiredService<IMeterReadingDao>();
+
+                    var toDoController = new ToDoItemController(toDoDao, toDoContainer, testEventContainer);
+                    var assetController = new AssetController(assetDao, assetContainer, testEventContainer);
+                    var assetTaskController = new AssetTaskController(assetTaskDao, assetTaskContainer, testEventContainer);
+                    var meterController = new MeterController(meterDao, meterReadingDao, meterContainer, testEventContainer);
+                    var meterReadingController = new MeterReadingController(meterReadingDao, meterReadingContainer, testEventContainer);
+
+                    return new MessageBrokerService(mqttBrokers, entityUpdateCount, meterReadingsPerMeterCount, testEventContainer,
+                        toDoController, assetController, assetTaskController, meterController, meterReadingController,
+                        crudEventContainer, tasksPerAssetCount, mqttSessionId);
+                });
+            }).Build();
+
+        var compareServiceHost = Host.CreateDefaultBuilder(args)
+            .ConfigureServices(services =>
+            {
+                AddDaoService(services, usePg);
+                services.AddSingleton<IWebClientUrlPool>(new WebClientUrlPool(webClientUrls));                
+
+                var assetClientBuilder = services.AddHttpClient("AssetClient");
+                assetClientBuilder.AddStandardResilienceHandler();
+
+                var assetTaskClientBuilder = services.AddHttpClient("AssetTaskClient");
+                assetTaskClientBuilder.AddStandardResilienceHandler();
+
+                var toDoItemClientBuilder = services.AddHttpClient("ToDoItemClient");
+                toDoItemClientBuilder.AddStandardResilienceHandler();
+
+                var meterClientBuilder = services.AddHttpClient("MeterClient");
+                meterClientBuilder.AddStandardResilienceHandler();
+
+                var meterReadingClientBuilder = services.AddHttpClient("MeterReadingClient");
+                meterReadingClientBuilder.AddStandardResilienceHandler();
+
+                services.AddLogging(builder =>
+                {
+                    builder.SetMinimumLevel(LogLevel.Error);
+                });
+
+                services.AddHostedService(provider =>
+                {
+                    var toDoDao = provider.GetRequiredService<IToDoItemDao>();
+                    var assetDao = provider.GetRequiredService<IAssetDao>();
+                    var assetTaskDao = provider.GetRequiredService<IAssetTaskDao>();
+                    var meterDao = provider.GetRequiredService<IMeterDao>();
+                    var meterReadingDao = provider.GetRequiredService<IMeterReadingDao>();
+
+                    var toDoController = new ToDoItemController(toDoDao, toDoContainer, testEventContainer);
+                    var assetController = new AssetController(assetDao, assetContainer, testEventContainer);
+                    var assetTaskController = new AssetTaskController(assetTaskDao, assetTaskContainer, testEventContainer);
+                    var meterController = new MeterController(meterDao, meterReadingDao, meterContainer, testEventContainer);
+                    var meterReadingController = new MeterReadingController(meterReadingDao, meterReadingContainer, testEventContainer);
+
+                    var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
+                    var webClientUrlPool = provider.GetRequiredService<IWebClientUrlPool>();                    
+
+                    var assetHttpClient = httpClientFactory.CreateClient("AssetClient");
+                    assetHttpClient.Timeout = TimeSpan.FromMinutes(2);
+                    assetHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
+                    var assetClient = new AssetClient(assetHttpClient, webClientUrlPool);
+                    assetClient.Initialise(assetUrlIndex);                    
+
+                    var assetTaskHttpClient = httpClientFactory.CreateClient("AssetTaskClient");
+                    assetTaskHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
+                    var assetTaskClient = new AssetTaskClient(assetTaskHttpClient, webClientUrlPool);
+                    assetTaskClient.Initialise(assetTaskUrlIndex);                    
+
+                    var toDoItemHttpClient = httpClientFactory.CreateClient("ToDoItemClient");
+                    toDoItemHttpClient.Timeout = TimeSpan.FromMinutes(5);                    
+                    toDoItemHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
+                    var toDoItemClient = new ToDoItemClient(toDoItemHttpClient, webClientUrlPool);
+                    toDoItemClient.Initialise(toDoUrlIndex);                    
+
+                    var meterHttpClient = httpClientFactory.CreateClient("MeterClient");
+                    meterHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
+                    var meterClient = new MeterClient(meterHttpClient, webClientUrlPool);
+                    meterClient.Initialise(meterUrlIndex);
+
+                    var meterReadingHttpClient = httpClientFactory.CreateClient("MeterReadingClient");
+                    meterReadingHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
+                    var meterReadingClient = new MeterReadingClient(meterReadingHttpClient, webClientUrlPool);
+                    meterReadingClient.Initialise(meterReadingUrlIndex);                    
+
+                    return new CompareService(clientIds, testEventContainer, doItems, doAssets,
+                        doAssetTasks, toDoController, assetController, assetTaskController, assetClient,
+                        assetTaskClient, toDoItemClient, doMeters, doMeterReadings, meterController, meterClient,
+                        meterReadingController, meterReadingClient, doDelete, entityInsertCount, doMeterAdr, tasksPerAssetCount,
+                        meterReadingsPerMeterCount);
+                });
+            }).Build();
+
+
+        var mqttTask = mqttServiceHost.RunAsync();
+        var webClientTask = webClientServiceHost.RunAsync();
+        var compareTask = compareServiceHost.RunAsync();
+
+        await Task.WhenAll(mqttTask, webClientTask, compareTask);
+    }
+
+    private static void AddDaoService(IServiceCollection services, bool usePg = true)
+    {
+        var dbName = "data.db";
+        //dbName = ":memory:";        
+        var connectionString = $"Data Source={dbName}";
+
+        services.AddSingleton<IDbConnectionPool>(new DbConnectionPool(connectionString));
+
+        if (usePg)
+        {
+            services.AddScoped<IToDoItemDao, ToDoItemPgDao>();
+            services.AddScoped<IAssetDao, AssetPgDao>();
+            services.AddScoped<IAssetTaskDao, AssetTaskPgDao>();
+            services.AddScoped<IMeterDao, MeterPgDao>();
+            services.AddScoped<IMeterReadingDao, MeterReadingPgDao>();
+        }
+        else
+        {
+            services.AddScoped<IToDoItemDao, ToDoItemSqliteDao>();
+            services.AddScoped<IAssetDao, AssetSqliteDao>();
+            services.AddScoped<IAssetTaskDao, AssetTaskSqliteDao>();
+            services.AddScoped<IMeterDao, MeterSqliteDao>();
+            services.AddScoped<IMeterReadingDao, MeterReadingSqliteDao>();
+        }
+    }
+}
