@@ -618,7 +618,7 @@ public class CompareService : BackgroundService, ICompareService
             if (localMeterReading == null)
                 continue;
 
-            var remoteEntity = await _meterReadingClient.GetRemoteMeterReadingAsync(localMeterReading.Id.Value);
+            var remoteEntity = await _meterReadingClient.GetRemoteMeterReadingAsync(localMeterReading!.Id!.Value);
             
             if (remoteEntity == "null")
                 continue;

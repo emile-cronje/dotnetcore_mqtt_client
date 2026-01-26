@@ -8,7 +8,7 @@ public class ToDoItemClient
     private const string _resourcePath = "/api/todoitems/";
     private readonly HttpClient _httpClient;
     private readonly IWebClientUrlPool _urlPool;
-    private string _clientUrl;
+    private string _clientUrl = null!;
 
     public ToDoItemClient(HttpClient httpClient, IWebClientUrlPool urlPool)
     {

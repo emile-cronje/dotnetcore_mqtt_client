@@ -148,7 +148,7 @@ public class MeterController : EntityController
         return count > 0 ? totalRate / count : 0;
     }
 
-    private void FlushTimerCallback(object state)
+    private void FlushTimerCallback(object? state)
     {
         _ = Task.Run(FlushTimerCallbackAsync);
     }
@@ -222,8 +222,7 @@ public class MeterController : EntityController
             _currentDeleteBatch = [];
 
             await _dao.BatchDelete(batchToFlush.Where(x => x.meter.Id.HasValue)
-                .Select(x => x.meter.Id.Value));
-            EntityContainer?.RemoveDeleteMessageIds(batchToFlush.Select(x => x.messageId).ToList());
+                .Select(x => x.meter.Id!.Value));
         }
         finally
         {

@@ -10,7 +10,7 @@ public abstract class EntityController
     protected readonly TestEventContainer TestEventContainer;
     protected DateTime DeleteBatchStartTime;
     protected DateTime InsertBatchStartTime;
-    protected Timer FlushTimer;
+    protected Timer FlushTimer = null!;
     protected DateTime UpdateBatchStartTime;
     protected readonly SemaphoreSlim InsertBatchLockSem = new(1, 1);    
     protected readonly SemaphoreSlim InsertFlushBatchLockSem = new(1, 1);    

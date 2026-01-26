@@ -115,7 +115,7 @@ public class AssetTaskPgDao : PgDao<AssetTask>, IAssetTaskDao
             for (var retry = 0; retry < maxRetries; retry++)
                 try
                 {
-                    var idsToUpdate = assetTasks.Select(i => i.Id).Where(id => id.HasValue).Select(id => id.Value).ToList();
+                    var idsToUpdate = assetTasks.Select(i => i.Id).Where(id => id.HasValue).Select(id => id!.Value).ToList();
 
                     if (!idsToUpdate.Any())
                     {
@@ -280,8 +280,8 @@ public class AssetTaskPgDao : PgDao<AssetTask>, IAssetTaskDao
                             connection, transaction))
                         {
                             updateCmd.Parameters.AddWithValue("id", assetTask.Id.Value);
-                            updateCmd.Parameters.AddWithValue("code", assetTask.Code);
-                            updateCmd.Parameters.AddWithValue("description", assetTask.Description);
+                            updateCmd.Parameters.AddWithValue("code", (object?)assetTask.Code ?? DBNull.Value);
+                            updateCmd.Parameters.AddWithValue("description", (object?)assetTask.Description ?? DBNull.Value);
                             updateCmd.Parameters.AddWithValue("isRfs", assetTask.IsRfs);                            
                             updateCmd.Parameters.AddWithValue("version", assetTask.Version);
                             updateCmd.Parameters.AddWithValue("messageId", assetTask.MessageId);

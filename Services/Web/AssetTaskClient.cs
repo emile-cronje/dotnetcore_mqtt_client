@@ -8,7 +8,7 @@ public class AssetTaskClient
     private const string _resourcePath = "/api/assettasks/";
     private readonly HttpClient _httpClient;
     private readonly IWebClientUrlPool _urlPool;
-    private string _clientUrl;
+    private string _clientUrl = null!;
 
     public AssetTaskClient(HttpClient httpClient, IWebClientUrlPool urlPool)
     {

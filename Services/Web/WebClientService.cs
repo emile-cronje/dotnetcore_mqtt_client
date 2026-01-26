@@ -144,7 +144,7 @@ public class WebClientService : BackgroundService, IWebClientService
         await _toDoItemClient.PostAsync(mqttSessionId, insertData);
     }
 
-    public async Task ProcessItemPutAsync(Guid mqttSessionId, ToDoItem toDoItem)
+    public async Task<string> ProcessItemPutAsync(Guid mqttSessionId, ToDoItem toDoItem)
     {
         toDoItem.IsComplete = true;
 
@@ -165,13 +165,16 @@ public class WebClientService : BackgroundService, IWebClientService
             _toDoItemController.EntityContainer?.AddUpdateMessageId(messageId);
             await _toDoItemClient.PutAsync(mqttSessionId, toDoItem.Id.Value, toDoItemJson);
         }
+        
+        return messageId;
     }
 
-    public async Task ProcessItemDeleteAsync(Guid mqttSessionId, long toDoItemId)
+    public async Task<string> ProcessItemDeleteAsync(Guid mqttSessionId, long toDoItemId)
     {
         string messageId = _toDoItemController.GetNextEntityMessageId;
         _toDoItemController.EntityContainer?.AddDeleteMessageId(messageId);        
         await _toDoItemClient.DeleteAsync(toDoItemId, messageId, mqttSessionId);
+        return messageId;
     }
 
     public async Task ProcessAssetPostAsync(Guid mqttSessionId, CrudCommand command)
@@ -214,7 +217,7 @@ public class WebClientService : BackgroundService, IWebClientService
         await _meterClient.PostAsync(mqttSessionId, insertData);
     }
 
-    public async Task ProcessMeterPutAsync(Guid mqttSessionId, Meter meter)
+    public async Task<string> ProcessMeterPutAsync(Guid mqttSessionId, Meter meter)
     {
         meter.IsPaused = !meter.IsPaused;
 
@@ -235,16 +238,19 @@ public class WebClientService : BackgroundService, IWebClientService
             _meterController.EntityContainer?.AddUpdateMessageId(messageId);
             await _meterClient.PutAsync(mqttSessionId, meter.Id.Value, meterJson);
         }
+        
+        return messageId;
     }
 
-    public async Task ProcessMeterDeleteAsync(Guid mqttSessionId, long meterId)
+    public async Task<string> ProcessMeterDeleteAsync(Guid mqttSessionId, long meterId)
     {
         string messageId = _meterController.GetNextEntityMessageId;
         _testEventContainer.EntityContainers[EntityType.Meter]?.AddDeleteMessageId(messageId);
         await _meterClient.DeleteAsync(meterId, messageId, mqttSessionId);
+        return messageId;
     }
 
-    public async Task ProcessAssetPutAsync(Guid mqttSessionId, Asset asset)
+    public async Task<string> ProcessAssetPutAsync(Guid mqttSessionId, Asset asset)
     {
         asset.IsMsi = true;
 
@@ -266,13 +272,16 @@ public class WebClientService : BackgroundService, IWebClientService
             _assetController.EntityContainer?.AddUpdateMessageId(messageId);
             await _assetClient.PutAsync(mqttSessionId, asset.Id.Value, assetJson);
         }
+        
+        return messageId;
     }
 
-    public async Task ProcessAssetDeleteAsync(Guid mqttSessionId, long assetId)
+    public async Task<string> ProcessAssetDeleteAsync(Guid mqttSessionId, long assetId)
     {
         string messageId = _assetController.GetNextEntityMessageId;
         _assetController.EntityContainer?.AddDeleteMessageId(messageId);
         await _assetClient.DeleteAsync(assetId, messageId, mqttSessionId);
+        return messageId;
     }
 
     public async Task ProcessAssetTaskPostAsync(Guid mqttSessionId, CrudCommand command)
@@ -341,7 +350,7 @@ public class WebClientService : BackgroundService, IWebClientService
         return collection.GetValueOrDefault(entityGuid.Value, -1);
     }
 
-    public async Task ProcessAssetTaskPutAsync(Guid mqttSessionId, AssetTask assetTask)
+    public async Task<string> ProcessAssetTaskPutAsync(Guid mqttSessionId, AssetTask assetTask)
     {
         assetTask.IsRfs = !assetTask.IsRfs;
 
@@ -363,16 +372,19 @@ public class WebClientService : BackgroundService, IWebClientService
             _assetTaskController.EntityContainer?.AddUpdateMessageId(messageId);
             await _assetTaskClient.PutAsync(mqttSessionId, assetTask.Id.Value, assetTaskJson);
         }
+        
+        return messageId;
     }
 
-    public async Task ProcessAssetTaskDeleteAsync(Guid mqttSessionId, long assetTaskId)
+    public async Task<string> ProcessAssetTaskDeleteAsync(Guid mqttSessionId, long assetTaskId)
     {
         string messageId = _assetTaskController.GetNextEntityMessageId;
         _assetTaskController.EntityContainer?.AddDeleteMessageId(messageId);
         await _assetTaskClient.DeleteAsync(assetTaskId, messageId, mqttSessionId);
+        return messageId;
     }
 
-    public async Task ProcessMeterReadingPutAsync(Guid mqttSessionId, MeterReading meterReading)
+    public async Task<string> ProcessMeterReadingPutAsync(Guid mqttSessionId, MeterReading meterReading)
     {
         var namingStrategy = new CamelCaseNamingStrategy();
         var jsonSerializerSettings = new JsonSerializerSettings
@@ -392,12 +404,15 @@ public class WebClientService : BackgroundService, IWebClientService
             _meterReadingController.EntityContainer?.AddUpdateMessageId(messageId);
             await _meterReadingClient.PutAsync(mqttSessionId, meterReading.Id.Value, meterReadingJson);
         }
+        
+        return messageId;
     }
 
-    public async Task ProcessMeterReadingDeleteAsync(Guid mqttSessionId, long meterReadingId)
+    public async Task<string> ProcessMeterReadingDeleteAsync(Guid mqttSessionId, long meterReadingId)
     {
         string messageId = _meterReadingController.GetNextEntityMessageId;
         _meterReadingController.EntityContainer?.AddDeleteMessageId(messageId);
         await _meterReadingClient.DeleteAsync(meterReadingId, messageId, mqttSessionId);
+        return messageId;
     }
 }
