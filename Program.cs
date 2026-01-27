@@ -61,13 +61,13 @@ public abstract class Program
         //clientIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];        
 
         // entities
-        var doItems = true;
+        var doItems = false;
         var doAssets = true;
-        var doMeters = true;
+        var doMeters = false;
 
         // details
-        var doAssetTasks = true;        
-        var doMeterReadings = true;
+        var doAssetTasks = doAssets;        
+        var doMeterReadings = doMeters;
 
         // actions
         var doMeterAdr = true;        
@@ -75,7 +75,7 @@ public abstract class Program
         var doDelete = true;
         
         // platform
-        bool usePython = true;
+        bool usePython = false;
         bool useNode = !usePython;        
         bool useDotNet = false;        
         bool usePythonAndNode = usePython && useNode;        
@@ -305,26 +305,72 @@ public abstract class Program
 
         var mqttSessionId = Guid.NewGuid();
 
+        // Create a single HttpClientFactory and clients to be shared across services
+        var sharedServicesCollection = new ServiceCollection();
+        sharedServicesCollection.AddSingleton<IWebClientUrlPool>(new WebClientUrlPool(webClientUrls));
+        
+        var assetClientBuilder = sharedServicesCollection.AddHttpClient("AssetClient");
+        assetClientBuilder.AddStandardResilienceHandler();
+
+        var assetTaskClientBuilder = sharedServicesCollection.AddHttpClient("AssetTaskClient");
+        assetTaskClientBuilder.AddStandardResilienceHandler();
+
+        var toDoItemClientBuilder = sharedServicesCollection.AddHttpClient("ToDoItemClient");
+        toDoItemClientBuilder.AddStandardResilienceHandler();
+
+        var meterClientBuilder = sharedServicesCollection.AddHttpClient("MeterClient");
+        meterClientBuilder.AddStandardResilienceHandler();
+
+        var meterReadingClientBuilder = sharedServicesCollection.AddHttpClient("MeterReadingClient");
+        meterReadingClientBuilder.AddStandardResilienceHandler();
+
+        var sharedServiceProvider = sharedServicesCollection.BuildServiceProvider();
+        var httpClientFactory = sharedServiceProvider.GetRequiredService<IHttpClientFactory>();
+        var webClientUrlPool = sharedServiceProvider.GetRequiredService<IWebClientUrlPool>();
+
+        // Create single instances of each HTTP client
+        var assetHttpClient = httpClientFactory.CreateClient("AssetClient");
+        assetHttpClient.Timeout = TimeSpan.FromMinutes(2);
+        assetHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+            Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
+
+        var assetTaskHttpClient = httpClientFactory.CreateClient("AssetTaskClient");
+        assetTaskHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+            Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
+
+        var toDoItemHttpClient = httpClientFactory.CreateClient("ToDoItemClient");
+        toDoItemHttpClient.Timeout = TimeSpan.FromMinutes(5);
+        toDoItemHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+            Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
+
+        var meterHttpClient = httpClientFactory.CreateClient("MeterClient");
+        meterHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+            Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
+
+        var meterReadingHttpClient = httpClientFactory.CreateClient("MeterReadingClient");
+        meterReadingHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+            Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
+
+        // Create single instances of each client to be shared
+        var toDoItemClient = new ToDoItemClient(toDoItemHttpClient, webClientUrlPool);
+        toDoItemClient.Initialise(toDoUrlIndex);
+
+        var assetClient = new AssetClient(assetHttpClient, webClientUrlPool);
+        assetClient.Initialise(assetUrlIndex);
+
+        var assetTaskClient = new AssetTaskClient(assetTaskHttpClient, webClientUrlPool);
+        assetTaskClient.Initialise(assetTaskUrlIndex);
+
+        var meterClient = new MeterClient(meterHttpClient, webClientUrlPool);
+        meterClient.Initialise(meterUrlIndex);
+
+        var meterReadingClient = new MeterReadingClient(meterReadingHttpClient, webClientUrlPool);
+        meterReadingClient.Initialise(meterReadingUrlIndex);
+
         var webClientServiceHost = Host.CreateDefaultBuilder(args)
             .ConfigureServices(services =>
             {
                 AddDaoService(services, usePg);
-                services.AddSingleton<IWebClientUrlPool>(new WebClientUrlPool(webClientUrls));                
-
-                var assetClientBuilder = services.AddHttpClient("AssetClient");
-                assetClientBuilder.AddStandardResilienceHandler();
-
-                var assetTaskClientBuilder = services.AddHttpClient("AssetTaskClient");
-                assetTaskClientBuilder.AddStandardResilienceHandler();
-
-                var toDoItemClientBuilder = services.AddHttpClient("ToDoItemClient");
-                toDoItemClientBuilder.AddStandardResilienceHandler();
-
-                var meterClientBuilder = services.AddHttpClient("MeterClient");
-                meterClientBuilder.AddStandardResilienceHandler();
-
-                var meterReadingClientBuilder = services.AddHttpClient("MeterReadingClient");
-                meterReadingClientBuilder.AddStandardResilienceHandler();
 
                 services.AddLogging(builder =>
                 {
@@ -348,46 +394,6 @@ public abstract class Program
                     var assetTaskController = new AssetTaskController(assetTaskDao, assetTaskContainer, testEventContainer);                    
                     var meterController = new MeterController(meterDao, meterReadingDao, meterContainer, testEventContainer);                    
                     var meterReadingController = new MeterReadingController(meterReadingDao, meterReadingContainer, testEventContainer);                    
-
-                    var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
-
-                    var assetHttpClient = httpClientFactory.CreateClient("AssetClient");
-                    assetHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
-
-                    var assetTaskHttpClient = httpClientFactory.CreateClient("AssetTaskClient");
-                    assetTaskHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
-
-                    var toDoItemHttpClient = httpClientFactory.CreateClient("ToDoItemClient");
-                    toDoItemHttpClient.Timeout = TimeSpan.FromMinutes(5);                                        
-                    toDoItemHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
-
-                    var meterHttpClient = httpClientFactory.CreateClient("MeterClient");
-                    meterHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
-
-                    var meterReadingHttpClient = httpClientFactory.CreateClient("MeterReadingClient");
-                    meterReadingHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
-
-                    var webClientUrlPool = provider.GetRequiredService<IWebClientUrlPool>();
-                    
-                    var toDoItemClient = new ToDoItemClient(toDoItemHttpClient, webClientUrlPool);
-                    toDoItemClient.Initialise(toDoUrlIndex);
-                    
-                    var assetClient = new AssetClient(assetHttpClient, webClientUrlPool);
-                    assetClient.Initialise(assetUrlIndex);
-                    
-                    var assetTaskClient = new AssetTaskClient(assetTaskHttpClient, webClientUrlPool);
-                    assetTaskClient.Initialise(assetTaskUrlIndex);
-                    
-                    var meterClient = new MeterClient(meterHttpClient, webClientUrlPool);
-                    meterClient.Initialise(meterUrlIndex);
-                    
-                    var meterReadingClient = new MeterReadingClient(meterReadingHttpClient, webClientUrlPool);
-                    meterReadingClient.Initialise(meterReadingUrlIndex);                    
 
                     return new WebClientService(clientIds, entityInsertCount, entityUpdateCount,
                         deletePerEntityTypeCount,
@@ -430,22 +436,6 @@ public abstract class Program
             .ConfigureServices(services =>
             {
                 AddDaoService(services, usePg);
-                services.AddSingleton<IWebClientUrlPool>(new WebClientUrlPool(webClientUrls));                
-
-                var assetClientBuilder = services.AddHttpClient("AssetClient");
-                assetClientBuilder.AddStandardResilienceHandler();
-
-                var assetTaskClientBuilder = services.AddHttpClient("AssetTaskClient");
-                assetTaskClientBuilder.AddStandardResilienceHandler();
-
-                var toDoItemClientBuilder = services.AddHttpClient("ToDoItemClient");
-                toDoItemClientBuilder.AddStandardResilienceHandler();
-
-                var meterClientBuilder = services.AddHttpClient("MeterClient");
-                meterClientBuilder.AddStandardResilienceHandler();
-
-                var meterReadingClientBuilder = services.AddHttpClient("MeterReadingClient");
-                meterReadingClientBuilder.AddStandardResilienceHandler();
 
                 services.AddLogging(builder =>
                 {
@@ -465,41 +455,6 @@ public abstract class Program
                     var assetTaskController = new AssetTaskController(assetTaskDao, assetTaskContainer, testEventContainer);
                     var meterController = new MeterController(meterDao, meterReadingDao, meterContainer, testEventContainer);
                     var meterReadingController = new MeterReadingController(meterReadingDao, meterReadingContainer, testEventContainer);
-
-                    var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
-                    var webClientUrlPool = provider.GetRequiredService<IWebClientUrlPool>();                    
-
-                    var assetHttpClient = httpClientFactory.CreateClient("AssetClient");
-                    assetHttpClient.Timeout = TimeSpan.FromMinutes(2);
-                    assetHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
-                    var assetClient = new AssetClient(assetHttpClient, webClientUrlPool);
-                    assetClient.Initialise(assetUrlIndex);                    
-
-                    var assetTaskHttpClient = httpClientFactory.CreateClient("AssetTaskClient");
-                    assetTaskHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
-                    var assetTaskClient = new AssetTaskClient(assetTaskHttpClient, webClientUrlPool);
-                    assetTaskClient.Initialise(assetTaskUrlIndex);                    
-
-                    var toDoItemHttpClient = httpClientFactory.CreateClient("ToDoItemClient");
-                    toDoItemHttpClient.Timeout = TimeSpan.FromMinutes(5);                    
-                    toDoItemHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
-                    var toDoItemClient = new ToDoItemClient(toDoItemHttpClient, webClientUrlPool);
-                    toDoItemClient.Initialise(toDoUrlIndex);                    
-
-                    var meterHttpClient = httpClientFactory.CreateClient("MeterClient");
-                    meterHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
-                    var meterClient = new MeterClient(meterHttpClient, webClientUrlPool);
-                    meterClient.Initialise(meterUrlIndex);
-
-                    var meterReadingHttpClient = httpClientFactory.CreateClient("MeterReadingClient");
-                    meterReadingHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                        Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials)));
-                    var meterReadingClient = new MeterReadingClient(meterReadingHttpClient, webClientUrlPool);
-                    meterReadingClient.Initialise(meterReadingUrlIndex);                    
 
                     return new CompareService(clientIds, testEventContainer, doItems, doAssets,
                         doAssetTasks, toDoController, assetController, assetTaskController, assetClient,
