@@ -9,11 +9,17 @@ public class AssetClient
     private readonly HttpClient _httpClient;
     private readonly IWebClientUrlPool _urlPool;
     private string _clientUrl = string.Empty;
+    private EntityContainer? _entityContainer;
 
     public AssetClient(HttpClient httpClient, IWebClientUrlPool urlPool)
     {
         _urlPool = urlPool;
         _httpClient = httpClient;
+    }
+
+    public void SetEntityContainer(EntityContainer? entityContainer)
+    {
+        _entityContainer = entityContainer;
     }
 
     public void Initialise(int? index = 1)
@@ -45,12 +51,18 @@ public class AssetClient
         return await response.Content.ReadAsStringAsync();
     }
 
-    public async Task<string> PutAsync(Guid mqttSessionId, long id, string assetData)
+    public async Task<string> PutAsync(Guid mqttSessionId, long id, string assetData, string messageId = "")
     {
         var url = $"{_clientUrl}{_resourcePath}{id}";
         string jsonPayload = JsonConvert.SerializeObject(new { assetData, mqttSessionId });        
         var payload = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
         var response = await _httpClient.PutAsync(url, payload);
+        
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound && !string.IsNullOrEmpty(messageId))
+        {
+            _entityContainer?.RemoveUpdateMessageIdOn404(messageId);
+        }
+        
         return await response.Content.ReadAsStringAsync();
     }
 
@@ -92,7 +104,12 @@ public class AssetClient
             Content = content
         };
 
-        await _httpClient.SendAsync(request); 
+        var response = await _httpClient.SendAsync(request);
+        
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            _entityContainer?.RemoveDeleteMessageIdOn404(messageId);
+        }
     }
     
     public async Task<HttpResponseMessage> DeleteAllAsync()

@@ -163,7 +163,7 @@ public class WebClientService : BackgroundService, IWebClientService
         if (toDoItem.Id != null)
         {
             _toDoItemController.EntityContainer?.AddUpdateMessageId(messageId);
-            await _toDoItemClient.PutAsync(mqttSessionId, toDoItem.Id.Value, toDoItemJson);
+            await _toDoItemClient.PutAsync(mqttSessionId, toDoItem.Id.Value, toDoItemJson, messageId);
         }
     }
 
@@ -233,7 +233,7 @@ public class WebClientService : BackgroundService, IWebClientService
         if (meter.Id != null)
         {
             _meterController.EntityContainer?.AddUpdateMessageId(messageId);
-            await _meterClient.PutAsync(mqttSessionId, meter.Id.Value, meterJson);
+            await _meterClient.PutAsync(mqttSessionId, meter.Id.Value, meterJson, messageId);
         }
     }
 
@@ -264,7 +264,7 @@ public class WebClientService : BackgroundService, IWebClientService
         if (asset.Id != null)
         {
             _assetController.EntityContainer?.AddUpdateMessageId(messageId);
-            await _assetClient.PutAsync(mqttSessionId, asset.Id.Value, assetJson);
+            await _assetClient.PutAsync(mqttSessionId, asset.Id.Value, assetJson, messageId);
         }
     }
 
@@ -361,7 +361,7 @@ public class WebClientService : BackgroundService, IWebClientService
         if (assetTask.Id != null)
         {
             _assetTaskController.EntityContainer?.AddUpdateMessageId(messageId);
-            await _assetTaskClient.PutAsync(mqttSessionId, assetTask.Id.Value, assetTaskJson);
+            await _assetTaskClient.PutAsync(mqttSessionId, assetTask.Id.Value, assetTaskJson, messageId);
         }
     }
 
@@ -390,7 +390,7 @@ public class WebClientService : BackgroundService, IWebClientService
         if (meterReading.Id != null)
         {
             _meterReadingController.EntityContainer?.AddUpdateMessageId(messageId);
-            await _meterReadingClient.PutAsync(mqttSessionId, meterReading.Id.Value, meterReadingJson);
+            await _meterReadingClient.PutAsync(mqttSessionId, meterReading.Id.Value, meterReadingJson, messageId);
         }
     }
 

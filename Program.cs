@@ -51,8 +51,8 @@ public abstract class Program
         var entityInsertCount = 10;
         var entityUpdateCount = 1;
         var deletePerEntityTypeCount = 5;        
-        var meterReadingsPerMeterCount = 4;
-        var tasksPerAssetCount = 4;
+        var meterReadingsPerMeterCount = 10;
+        var tasksPerAssetCount = 5;
         var useSqlite = false;
         var usePg = !useSqlite;
         clientIds = ["1", "2", "3", "4"];        
@@ -354,18 +354,28 @@ public abstract class Program
         // Create single instances of each client to be shared
         var toDoItemClient = new ToDoItemClient(toDoItemHttpClient, webClientUrlPool);
         toDoItemClient.Initialise(toDoUrlIndex);
+        if (doItems)
+            toDoItemClient.SetEntityContainer(toDoContainer);
 
         var assetClient = new AssetClient(assetHttpClient, webClientUrlPool);
         assetClient.Initialise(assetUrlIndex);
+        if (doAssets)
+            assetClient.SetEntityContainer(assetContainer);
 
         var assetTaskClient = new AssetTaskClient(assetTaskHttpClient, webClientUrlPool);
         assetTaskClient.Initialise(assetTaskUrlIndex);
+        if (doAssetTasks)
+            assetTaskClient.SetEntityContainer(assetTaskContainer);
 
         var meterClient = new MeterClient(meterHttpClient, webClientUrlPool);
         meterClient.Initialise(meterUrlIndex);
+        if (doMeters)
+            meterClient.SetEntityContainer(meterContainer);
 
         var meterReadingClient = new MeterReadingClient(meterReadingHttpClient, webClientUrlPool);
         meterReadingClient.Initialise(meterReadingUrlIndex);
+        if (doMeterReadings)
+            meterReadingClient.SetEntityContainer(meterReadingContainer);
 
         var webClientServiceHost = Host.CreateDefaultBuilder(args)
             .ConfigureServices(services =>

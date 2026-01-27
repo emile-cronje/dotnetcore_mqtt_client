@@ -149,6 +149,17 @@ public class EntityContainer
             _updateMessageIds.ExceptWith(messageIds);
         }
     }
+
+    public void RemoveUpdateMessageIdOn404(string messageId)
+    {
+        lock (_updateMessageIdLock)
+        {
+            if (!_updateMessageIds.Contains(messageId))
+                Console.WriteLine("Update message ID not found for 404: " + messageId);
+            else
+                _updateMessageIds.Remove(messageId);
+        }
+    }
     
     public void RemoveDeleteMessageId(string messageId)
     {
@@ -168,6 +179,17 @@ public class EntityContainer
         lock (_deleteMessageIdLock)
         {
             _deleteMessageIds.ExceptWith(messageIds);
+        }
+    }
+
+    public void RemoveDeleteMessageIdOn404(string messageId)
+    {
+        lock (_deleteMessageIdLock)
+        {
+            if (!_deleteMessageIds.Contains(messageId))
+                Console.WriteLine("Delete message ID not found for 404: " + messageId);
+            else
+                _deleteMessageIds.Remove(messageId);
         }
     }
 
