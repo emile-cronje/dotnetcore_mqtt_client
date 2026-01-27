@@ -119,8 +119,7 @@ public class CommandConsumer
                             if (localTodoItem == null)
                                 continue;
                             
-                            var messageId = await _webService.ProcessItemPutAsync(operation.MqttSessionId, localTodoItem);
-                            _toDoItemController.EntityContainer?.RemoveUpdateMessageId(messageId);
+                            await _webService.ProcessItemPutAsync(operation.MqttSessionId, localTodoItem);                    
                         }
                         else if (operation.EntityType == EntityType.Asset)
                         {
@@ -134,8 +133,7 @@ public class CommandConsumer
                             if (localAsset == null)
                                 continue;
                             
-                            var messageId = await _webService.ProcessAssetPutAsync(operation.MqttSessionId, localAsset);
-                            _assetController.EntityContainer?.RemoveUpdateMessageId(messageId);
+                            await _webService.ProcessAssetPutAsync(operation.MqttSessionId, localAsset);                    
                         }
                         else if (operation.EntityType == EntityType.Meter)
                         {
@@ -149,8 +147,7 @@ public class CommandConsumer
                             if (localMeter == null)
                                 continue;
                             
-                            var messageId = await _webService.ProcessMeterPutAsync(operation.MqttSessionId, localMeter);
-                            _meterController.EntityContainer?.RemoveUpdateMessageId(messageId);
+                            await _webService.ProcessMeterPutAsync(operation.MqttSessionId, localMeter);                            
                         }
                         else if (operation.EntityType == EntityType.AssetTask)
                         {
@@ -164,8 +161,7 @@ public class CommandConsumer
                             if (localAssetTask == null)
                                 continue;
                             
-                            var messageId = await _webService.ProcessAssetTaskPutAsync(operation.MqttSessionId, localAssetTask);
-                            _assetTaskController.EntityContainer?.RemoveUpdateMessageId(messageId);
+                            await _webService.ProcessAssetTaskPutAsync(operation.MqttSessionId, localAssetTask);                            
                         }
                         else if (operation.EntityType == EntityType.MeterReading)
                         {
@@ -179,8 +175,7 @@ public class CommandConsumer
                             if (localMeterReading == null)
                                 continue;
                             
-                            var messageId = await _webService.ProcessMeterReadingPutAsync(operation.MqttSessionId, localMeterReading);
-                            _meterReadingController.EntityContainer?.RemoveUpdateMessageId(messageId);
+                            await _webService.ProcessMeterReadingPutAsync(operation.MqttSessionId, localMeterReading);                            
                         }
                     }
                 }
@@ -217,8 +212,7 @@ public class CommandConsumer
                             if (itemId == null)
                                 continue;
 
-                            var messageId = await _webService.ProcessItemDeleteAsync(operation.MqttSessionId, itemId.Value);
-                            _toDoItemController.EntityContainer?.RemoveDeleteMessageId(messageId);
+                            await _webService.ProcessItemDeleteAsync(operation.MqttSessionId, itemId.Value);                            
                         }
 
                         else if (operation.EntityType == EntityType.Asset)
@@ -228,8 +222,7 @@ public class CommandConsumer
                             if (assetId == null)
                                 continue;
 
-                            var messageId = await _webService.ProcessAssetDeleteAsync(operation.MqttSessionId, assetId.Value);
-                            _assetController.EntityContainer?.RemoveDeleteMessageId(messageId);
+                            await _webService.ProcessAssetDeleteAsync(operation.MqttSessionId, assetId.Value);                            
                         }
                         else if (operation.EntityType == EntityType.Meter)
                         {
@@ -238,8 +231,7 @@ public class CommandConsumer
                             if (meterId == null)
                                 continue;
 
-                            var messageId = await _webService.ProcessMeterDeleteAsync(operation.MqttSessionId, meterId.Value);
-                            _testEventContainer.EntityContainers[EntityType.Meter]?.RemoveDeleteMessageId(messageId);
+                            await _webService.ProcessMeterDeleteAsync(operation.MqttSessionId, meterId.Value);                            
                         }
                         else if (operation.EntityType == EntityType.AssetTask)
                         {
@@ -248,8 +240,7 @@ public class CommandConsumer
                             if (assetTaskId == null)
                                 continue;
 
-                            var messageId = await _webService.ProcessAssetTaskDeleteAsync(operation.MqttSessionId, assetTaskId.Value);
-                            _assetTaskController.EntityContainer?.RemoveDeleteMessageId(messageId);
+                            await _webService.ProcessAssetTaskDeleteAsync(operation.MqttSessionId, assetTaskId.Value);                            
                         }
                         else if (operation.EntityType == EntityType.MeterReading)
                         {
@@ -258,8 +249,7 @@ public class CommandConsumer
                             if (meterReadingId == null)
                                 continue;
 
-                            var messageId = await _webService.ProcessMeterReadingDeleteAsync(operation.MqttSessionId, meterReadingId.Value);
-                            _meterReadingController.EntityContainer?.RemoveDeleteMessageId(messageId);
+                            await _webService.ProcessMeterReadingDeleteAsync(operation.MqttSessionId, meterReadingId.Value);                            
                         }
                     }
                 }

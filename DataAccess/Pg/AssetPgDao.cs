@@ -137,7 +137,7 @@ public class AssetPgDao : PgDao<Asset>, IAssetDao
             for (var retry = 0; retry < maxRetries; retry++)
                 try
                 {
-                    var idsToUpdate = assets.Select(i => i.Id).Where(id => id.HasValue).Select(id => id!.Value).ToList();
+                    var idsToUpdate = assets.Select(i => i.Id).Where(id => id.HasValue).Select(id => id.Value).ToList();
 
                     if (!idsToUpdate.Any())
                     {
@@ -186,7 +186,7 @@ public class AssetPgDao : PgDao<Asset>, IAssetDao
                         {
                             await writer.StartRowAsync();
                             await writer.WriteAsync(asset.ClientId);
-                            await writer.WriteAsync(asset.Id!.Value);
+                            await writer.WriteAsync(asset.Id.Value);
                             await writer.WriteAsync(asset.MessageId);
                             await writer.WriteAsync(asset.Version);
                             await writer.WriteAsync(asset.Code);
@@ -302,8 +302,8 @@ public class AssetPgDao : PgDao<Asset>, IAssetDao
                             connection, transaction))
                         {
                             updateCmd.Parameters.AddWithValue("id", asset.Id.Value);
-                            updateCmd.Parameters.AddWithValue("code", (object?)asset.Code ?? DBNull.Value);
-                            updateCmd.Parameters.AddWithValue("description", (object?)asset.Description ?? DBNull.Value);
+                            updateCmd.Parameters.AddWithValue("code", asset.Code);
+                            updateCmd.Parameters.AddWithValue("description", asset.Description);
                             updateCmd.Parameters.AddWithValue("isMsi", asset.IsMsi);                            
                             updateCmd.Parameters.AddWithValue("version", asset.Version);
                             updateCmd.Parameters.AddWithValue("messageId", asset.MessageId);

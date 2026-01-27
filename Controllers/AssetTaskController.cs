@@ -94,7 +94,7 @@ public class AssetTaskController : EntityController
         return await _dao.GetEntityCount();
     }
 
-    private void FlushTimerCallback(object? state)
+    private void FlushTimerCallback(object state)
     {
         _ = Task.Run(FlushTimerCallbackAsync);
     }
@@ -168,7 +168,8 @@ public class AssetTaskController : EntityController
             var batchToFlush = _currentDeleteBatch;
             _currentDeleteBatch = [];
 
-            await _dao.BatchDelete(batchToFlush.Where(x => x.assetTask.Id.HasValue).Select(x => x.assetTask.Id!.Value));
+            await _dao.BatchDelete(batchToFlush.Where(x => x.assetTask.Id.HasValue).Select(x => x.assetTask.Id.Value));
+            EntityContainer?.RemoveDeleteMessageIds(batchToFlush.Select(x => x.messageId).ToList());
         }
         finally
         {

@@ -5,7 +5,7 @@ public class Entity(int clientId)
     public long? Id { get; init; }
     public int Version { get; init; }
     public int ClientId { get; } = clientId;
-    public string MessageId { get; set; } = null!;    
+    public string MessageId { get; set; }    
     public Guid Guid { get; set; }
 
     protected void SetDateTime(ref DateTime? oldValue, DateTime? newValue)

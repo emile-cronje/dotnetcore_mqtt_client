@@ -8,7 +8,7 @@ public class MeterReadingClient
     private const string _resourcePath = "/api/meterreadings/";
     private readonly HttpClient _httpClient;
     private readonly IWebClientUrlPool _urlPool;
-    private string _clientUrl = null!;
+    private string _clientUrl;
 
     public MeterReadingClient(HttpClient httpClient, IWebClientUrlPool urlPool)
     {

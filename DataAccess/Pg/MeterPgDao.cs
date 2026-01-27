@@ -178,7 +178,7 @@ $$ LANGUAGE plpgsql;
             for (var retry = 0; retry < maxRetries; retry++)
                 try
                 {
-                    var idsToUpdate = meters.Select(i => i.Id).Where(id => id.HasValue).Select(id => id!.Value).ToList();
+                    var idsToUpdate = meters.Select(i => i.Id).Where(id => id.HasValue).Select(id => id.Value).ToList();
 
                     if (!idsToUpdate.Any())
                     {
@@ -342,8 +342,8 @@ $$ LANGUAGE plpgsql;
                             connection, transaction))
                         {
                             updateCmd.Parameters.AddWithValue("id", meter.Id.Value);
-                            updateCmd.Parameters.AddWithValue("code", (object?)meter.Code ?? DBNull.Value);
-                            updateCmd.Parameters.AddWithValue("description", (object?)meter.Description ?? DBNull.Value);
+                            updateCmd.Parameters.AddWithValue("code", meter.Code);
+                            updateCmd.Parameters.AddWithValue("description", meter.Description);
                             updateCmd.Parameters.AddWithValue("isPaused", meter.IsPaused);                            
                             updateCmd.Parameters.AddWithValue("version", meter.Version);
                             updateCmd.Parameters.AddWithValue("messageId", meter.MessageId);

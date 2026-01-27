@@ -48,26 +48,26 @@ public abstract class Program
         var dotNetPort = 8001; // c#        
         var nodePort = 3002; // nodejs - ts        
         var credentials = "foo:bar";
-        var entityInsertCount = 20;
+        var entityInsertCount = 10;
         var entityUpdateCount = 1;
         var deletePerEntityTypeCount = 5;        
-        var meterReadingsPerMeterCount = 5;
-        var tasksPerAssetCount = 5;
+        var meterReadingsPerMeterCount = 4;
+        var tasksPerAssetCount = 1;
         var useSqlite = false;
         var usePg = !useSqlite;
         clientIds = ["1", "2", "3", "4"];        
-        //clientIds = ["1", "2"];                                                                    
+        clientIds = ["1", "2"];                                                                    
         //clientIds = ["1"];        
         //clientIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];        
 
         // entities
-        var doItems = false;
+        var doItems = true;
         var doAssets = true;
-        var doMeters = false;
+        var doMeters = true;
 
         // details
-        var doAssetTasks = doAssets;        
-        var doMeterReadings = doMeters;
+        var doAssetTasks = true;        
+        var doMeterReadings = true;
 
         // actions
         var doMeterAdr = true;        
@@ -75,7 +75,7 @@ public abstract class Program
         var doDelete = true;
         
         // platform
-        bool usePython = false;
+        bool usePython = true;
         bool useNode = !usePython;        
         bool useDotNet = false;        
         bool usePythonAndNode = usePython && useNode;        
@@ -258,60 +258,36 @@ public abstract class Program
         EntityContainer assetContainer = new();        
         EntityContainer meterContainer = new();                
         EntityContainer assetTaskContainer = new();                
-        EntityContainer meterReadingContainer = new();
-        
-        // Centralized HTTP client configuration with Polly timeouts
-        Action<IServiceCollection> ConfigureHttpClients = services =>
-        {
-            var assetClientBuilder = services.AddHttpClient("AssetClient");
-            assetClientBuilder.ConfigureHttpClient(client => client.Timeout = TimeSpan.FromMinutes(2));
-            assetClientBuilder.AddStandardResilienceHandler();
-
-            var assetTaskClientBuilder = services.AddHttpClient("AssetTaskClient");
-            assetTaskClientBuilder.ConfigureHttpClient(client => client.Timeout = TimeSpan.FromMinutes(2));
-            assetTaskClientBuilder.AddStandardResilienceHandler();
-
-            var toDoItemClientBuilder = services.AddHttpClient("ToDoItemClient");
-            toDoItemClientBuilder.ConfigureHttpClient(client => client.Timeout = TimeSpan.FromMinutes(5));
-            toDoItemClientBuilder.AddStandardResilienceHandler();
-
-            var meterClientBuilder = services.AddHttpClient("MeterClient");
-            meterClientBuilder.ConfigureHttpClient(client => client.Timeout = TimeSpan.FromMinutes(5));
-            meterClientBuilder.AddStandardResilienceHandler();
-
-            var meterReadingClientBuilder = services.AddHttpClient("MeterReadingClient");
-            meterReadingClientBuilder.ConfigureHttpClient(client => client.Timeout = TimeSpan.FromMinutes(5));
-            meterReadingClientBuilder.AddStandardResilienceHandler();
-        };
+        EntityContainer meterReadingContainer = new();                        
         
         if (doItems)
         {
-            toDoContainer = new EntityContainer();
-            testEventContainer.EntityContainers.Add(EntityType.ToDoItem, toDoContainer);
+            testEventContainer.EntityContainers.Add(EntityType.ToDoItem, new EntityContainer());
+            testEventContainer.EntityContainers.TryGetValue(EntityType.ToDoItem, out toDoContainer);
         }
 
         if (doAssets)
         {
-            assetContainer = new EntityContainer();
-            testEventContainer.EntityContainers.Add(EntityType.Asset, assetContainer);            
+            testEventContainer.EntityContainers.Add(EntityType.Asset, new EntityContainer());
+            testEventContainer.EntityContainers.TryGetValue(EntityType.Asset, out assetContainer);            
         }
 
         if (doAssetTasks)
         {
-            assetTaskContainer = new EntityContainer();
-            testEventContainer.EntityContainers.Add(EntityType.AssetTask, assetTaskContainer);                                    
+            testEventContainer.EntityContainers.Add(EntityType.AssetTask, new EntityContainer());            
+            testEventContainer.EntityContainers.TryGetValue(EntityType.AssetTask, out assetTaskContainer);                                    
         }
         
         if (doMeters)
         {
-            meterContainer = new EntityContainer();
-            testEventContainer.EntityContainers.Add(EntityType.Meter, meterContainer);                        
+            testEventContainer.EntityContainers.Add(EntityType.Meter, new EntityContainer());            
+            testEventContainer.EntityContainers.TryGetValue(EntityType.Meter, out meterContainer);                        
         }
         
         if (doMeterReadings)
         {
-            meterReadingContainer = new EntityContainer();
-            testEventContainer.EntityContainers.Add(EntityType.MeterReading, meterReadingContainer);                                    
+            testEventContainer.EntityContainers.Add(EntityType.MeterReading, new EntityContainer());
+            testEventContainer.EntityContainers.TryGetValue(EntityType.MeterReading, out meterReadingContainer);                                    
         }
 
         var crudEventContainer = new EntityCrudContainer
@@ -335,7 +311,20 @@ public abstract class Program
                 AddDaoService(services, usePg);
                 services.AddSingleton<IWebClientUrlPool>(new WebClientUrlPool(webClientUrls));                
 
-                ConfigureHttpClients(services);
+                var assetClientBuilder = services.AddHttpClient("AssetClient");
+                assetClientBuilder.AddStandardResilienceHandler();
+
+                var assetTaskClientBuilder = services.AddHttpClient("AssetTaskClient");
+                assetTaskClientBuilder.AddStandardResilienceHandler();
+
+                var toDoItemClientBuilder = services.AddHttpClient("ToDoItemClient");
+                toDoItemClientBuilder.AddStandardResilienceHandler();
+
+                var meterClientBuilder = services.AddHttpClient("MeterClient");
+                meterClientBuilder.AddStandardResilienceHandler();
+
+                var meterReadingClientBuilder = services.AddHttpClient("MeterReadingClient");
+                meterReadingClientBuilder.AddStandardResilienceHandler();
 
                 services.AddLogging(builder =>
                 {
@@ -443,7 +432,20 @@ public abstract class Program
                 AddDaoService(services, usePg);
                 services.AddSingleton<IWebClientUrlPool>(new WebClientUrlPool(webClientUrls));                
 
-                ConfigureHttpClients(services);
+                var assetClientBuilder = services.AddHttpClient("AssetClient");
+                assetClientBuilder.AddStandardResilienceHandler();
+
+                var assetTaskClientBuilder = services.AddHttpClient("AssetTaskClient");
+                assetTaskClientBuilder.AddStandardResilienceHandler();
+
+                var toDoItemClientBuilder = services.AddHttpClient("ToDoItemClient");
+                toDoItemClientBuilder.AddStandardResilienceHandler();
+
+                var meterClientBuilder = services.AddHttpClient("MeterClient");
+                meterClientBuilder.AddStandardResilienceHandler();
+
+                var meterReadingClientBuilder = services.AddHttpClient("MeterReadingClient");
+                meterReadingClientBuilder.AddStandardResilienceHandler();
 
                 services.AddLogging(builder =>
                 {

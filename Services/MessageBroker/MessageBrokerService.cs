@@ -33,7 +33,7 @@ public class MessageBrokerService : BackgroundService, IMessageBrokerService
     private TestEventContainer _testEventContainer;
     private EntityContainer? _toDoContainer;
     private ToDoItemController _toDoController;
-    private IConsumer<Ignore, string> _consumer = null!;    
+    private IConsumer<Ignore, string> _consumer;    
     private readonly Guid _mqttSessionId;
 
     public MessageBrokerService(List<(string broker, string clientId)> mqttBrokers,
@@ -85,11 +85,11 @@ public class MessageBrokerService : BackgroundService, IMessageBrokerService
         while (true)
         {
             Dictionary<EntityType, int> insertCountsPerEntityType = _testEventContainer.EntityContainers
-                .Where(x => x.Value != null)
+                .Where(x => x.Value != null) // Filter out null values
                 .GroupBy(x => x.Key)
                 .ToDictionary(
                     group => group.Key,
-                    group => group.Sum(x => x.Value?.GetInsertMessageIdsCount() ?? 0)
+                    group => group.Sum(x => x.Value.GetInsertMessageIdsCount()) // Sum of counts as value
                 );
 
             foreach (var kvp in insertCountsPerEntityType)
@@ -99,11 +99,11 @@ public class MessageBrokerService : BackgroundService, IMessageBrokerService
             }
 
             Dictionary<EntityType, int> updateCountsPerEntityType = _testEventContainer.EntityContainers
-                .Where(x => x.Value != null)
+                .Where(x => x.Value != null) // Filter out null values
                 .GroupBy(x => x.Key)
                 .ToDictionary(
                     group => group.Key,
-                    group => group.Sum(x => x.Value?.GetUpdateMessageIdsCount() ?? 0)
+                    group => group.Sum(x => x.Value.GetUpdateMessageIdsCount()) // Sum of counts as value
                 );
 
             foreach (var kvp in updateCountsPerEntityType)
@@ -113,11 +113,11 @@ public class MessageBrokerService : BackgroundService, IMessageBrokerService
             }
 
             Dictionary<EntityType, int> deleteCountsPerEntityType = _testEventContainer.EntityContainers
-                .Where(x => x.Value != null)
+                .Where(x => x.Value != null) // Filter out null values
                 .GroupBy(x => x.Key)
                 .ToDictionary(
                     group => group.Key,
-                    group => group.Sum(x => x.Value?.GetDeleteMessageIdsCount() ?? 0)
+                    group => group.Sum(x => x.Value.GetDeleteMessageIdsCount()) // Sum of counts as value
                 );
 
             foreach (var kvp in deleteCountsPerEntityType)
@@ -976,7 +976,7 @@ public class MessageBrokerService : BackgroundService, IMessageBrokerService
 
     private class EntityMetaData
     {
-        public string MessageId { get; set; } = null!;
+        public string MessageId { get; set; }
         public string? ClientId { get; set; }
         public Guid? MqttSessionId { get; set; }
         public string? EntityType { get; set; }
