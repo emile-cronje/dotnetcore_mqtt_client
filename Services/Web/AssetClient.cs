@@ -8,7 +8,7 @@ public class AssetClient
     private const string _resourcePath = "/api/assets/";
     private readonly HttpClient _httpClient;
     private readonly IWebClientUrlPool _urlPool;
-    private string _clientUrl;
+    private string _clientUrl = string.Empty;
 
     public AssetClient(HttpClient httpClient, IWebClientUrlPool urlPool)
     {

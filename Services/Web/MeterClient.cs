@@ -9,7 +9,7 @@ public class MeterClient
     private const string _resourcePath = "/api/meters/";
     private readonly HttpClient _httpClient;
     private readonly IWebClientUrlPool _urlPool;
-    private string _clientUrl;
+    private string _clientUrl = string.Empty;
 
     public MeterClient(HttpClient httpClient, IWebClientUrlPool urlPool)
     {

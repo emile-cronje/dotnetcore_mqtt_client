@@ -113,7 +113,7 @@ public class ToDoItemPgDao : PgDao<ToDoItem>, IToDoItemDao
             for (var retry = 0; retry < maxRetries; retry++)
                 try
                 {
-                    var idsToUpdate = items.Select(i => i.Id).Where(id => id.HasValue).Select(id => id.Value).ToList();
+                    var idsToUpdate = items.Select(i => i.Id).Where(id => id!.HasValue).Select(id => id!.Value).ToList();
 
                     if (!idsToUpdate.Any())
                     {
@@ -163,7 +163,7 @@ public class ToDoItemPgDao : PgDao<ToDoItem>, IToDoItemDao
                         {
                             await writer.StartRowAsync();
                             await writer.WriteAsync(item.ClientId);
-                            await writer.WriteAsync(item.Id.Value);
+                            await writer.WriteAsync(item.Id!.Value);
                             await writer.WriteAsync(item.MessageId);
                             await writer.WriteAsync(item.Version);
                             await writer.WriteAsync(item.Name);
@@ -278,9 +278,9 @@ public class ToDoItemPgDao : PgDao<ToDoItem>, IToDoItemDao
                                WHERE ID = @id", 
                             connection, transaction))
                         {
-                            updateCmd.Parameters.AddWithValue("id", item.Id.Value);
-                            updateCmd.Parameters.AddWithValue("name", item.Name);
-                            updateCmd.Parameters.AddWithValue("description", item.Description);
+                            updateCmd.Parameters.AddWithValue("id", item.Id!.Value);
+                            updateCmd.Parameters.AddWithValue("name", item.Name ?? (object)DBNull.Value);
+                            updateCmd.Parameters.AddWithValue("description", item.Description ?? (object)DBNull.Value);
                             updateCmd.Parameters.AddWithValue("isComplete", item.IsComplete);
                             updateCmd.Parameters.AddWithValue("version", item.Version);
                             updateCmd.Parameters.AddWithValue("messageId", item.MessageId);

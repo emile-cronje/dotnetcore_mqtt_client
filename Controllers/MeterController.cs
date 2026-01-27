@@ -18,7 +18,7 @@ public class MeterController : EntityController
     {
         _dao = dao;
         _meterReadingDao = meterReadingDao;
-        FlushTimer = new Timer(FlushTimerCallback, null, FlushTimeOut, FlushTimeOut);
+        FlushTimer = new Timer(FlushTimerCallback!, null, FlushTimeOut, FlushTimeOut);
     }
 
     public async Task AddMeterAsync(Meter meter)
@@ -221,8 +221,8 @@ public class MeterController : EntityController
             var batchToFlush = _currentDeleteBatch;
             _currentDeleteBatch = [];
 
-            await _dao.BatchDelete(batchToFlush.Where(x => x.meter.Id.HasValue)
-                .Select(x => x.meter.Id.Value));
+            await _dao.BatchDelete(batchToFlush.Where(x => x.meter.Id!.HasValue)
+                .Select(x => x.meter.Id!.Value));
             EntityContainer?.RemoveDeleteMessageIds(batchToFlush.Select(x => x.messageId).ToList());
         }
         finally

@@ -15,7 +15,7 @@ public class ToDoItemController : EntityController
         TestEventContainer testEventContainer) : base(toDoEntityContainer, testEventContainer)
     {
         _dao = dao;
-        FlushTimer = new Timer(FlushTimerCallback, null, FlushTimeOut, FlushTimeOut);
+        FlushTimer = new Timer(FlushTimerCallback!, null, FlushTimeOut, FlushTimeOut);
     }
 
     public async Task AddItemAsync(ToDoItem item)
@@ -134,7 +134,7 @@ public class ToDoItemController : EntityController
             var batchToFlush = _currentDeleteBatch;
             _currentDeleteBatch = [];
 
-            await _dao.BatchDelete(batchToFlush.Where(x => x.item.Id.HasValue).Select(x => x.item.Id.Value));
+            await _dao.BatchDelete(batchToFlush.Where(x => x.item.Id!.HasValue).Select(x => x.item.Id!.Value));
             EntityContainer?.RemoveDeleteMessageIds(batchToFlush.Select(x => x.messageId).ToList());
         }
         finally

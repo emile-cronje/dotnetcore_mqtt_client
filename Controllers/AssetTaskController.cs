@@ -16,7 +16,7 @@ public class AssetTaskController : EntityController
         TestEventContainer testEventContainer) : base(assetTaskEntityContainer, testEventContainer)
     {
         _dao = dao;
-        FlushTimer = new Timer(FlushTimerCallback, null, FlushTimeOut, FlushTimeOut);
+        FlushTimer = new Timer(FlushTimerCallback!, null, FlushTimeOut, FlushTimeOut);
     }
 
     public async Task AddAssetTaskAsync(AssetTask assetTask)
@@ -168,7 +168,7 @@ public class AssetTaskController : EntityController
             var batchToFlush = _currentDeleteBatch;
             _currentDeleteBatch = [];
 
-            await _dao.BatchDelete(batchToFlush.Where(x => x.assetTask.Id.HasValue).Select(x => x.assetTask.Id.Value));
+            await _dao.BatchDelete(batchToFlush.Where(x => x.assetTask.Id!.HasValue).Select(x => x.assetTask.Id!.Value));
             EntityContainer?.RemoveDeleteMessageIds(batchToFlush.Select(x => x.messageId).ToList());
         }
         finally

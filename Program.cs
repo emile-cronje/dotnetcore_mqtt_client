@@ -61,9 +61,9 @@ public abstract class Program
         //clientIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];        
 
         // entities
-        var doItems = false;
+        var doItems = true;
         var doAssets = true;
-        var doMeters = false;
+        var doMeters = true;
 
         // details
         var doAssetTasks = doAssets;        
@@ -254,40 +254,40 @@ public abstract class Program
         }
         
         var testEventContainer = new TestEventContainer();
-        EntityContainer toDoContainer = new();
-        EntityContainer assetContainer = new();        
-        EntityContainer meterContainer = new();                
-        EntityContainer assetTaskContainer = new();                
-        EntityContainer meterReadingContainer = new();                        
+        EntityContainer? toDoContainer = null;        
+        EntityContainer? assetContainer = null;                
+        EntityContainer? meterContainer = null;        
+        EntityContainer? assetTaskContainer = null;                
+        EntityContainer? meterReadingContainer = null;                        
         
         if (doItems)
         {
             testEventContainer.EntityContainers.Add(EntityType.ToDoItem, new EntityContainer());
-            testEventContainer.EntityContainers.TryGetValue(EntityType.ToDoItem, out toDoContainer);
+            testEventContainer.EntityContainers.TryGetValue(EntityType.ToDoItem, out toDoContainer!);
         }
 
         if (doAssets)
         {
             testEventContainer.EntityContainers.Add(EntityType.Asset, new EntityContainer());
-            testEventContainer.EntityContainers.TryGetValue(EntityType.Asset, out assetContainer);            
+            testEventContainer.EntityContainers.TryGetValue(EntityType.Asset, out assetContainer!);            
         }
 
         if (doAssetTasks)
         {
             testEventContainer.EntityContainers.Add(EntityType.AssetTask, new EntityContainer());            
-            testEventContainer.EntityContainers.TryGetValue(EntityType.AssetTask, out assetTaskContainer);                                    
+            testEventContainer.EntityContainers.TryGetValue(EntityType.AssetTask, out assetTaskContainer!);                                    
         }
         
         if (doMeters)
         {
             testEventContainer.EntityContainers.Add(EntityType.Meter, new EntityContainer());            
-            testEventContainer.EntityContainers.TryGetValue(EntityType.Meter, out meterContainer);                        
+            testEventContainer.EntityContainers.TryGetValue(EntityType.Meter, out meterContainer!);                        
         }
         
         if (doMeterReadings)
         {
             testEventContainer.EntityContainers.Add(EntityType.MeterReading, new EntityContainer());
-            testEventContainer.EntityContainers.TryGetValue(EntityType.MeterReading, out meterReadingContainer);                                    
+            testEventContainer.EntityContainers.TryGetValue(EntityType.MeterReading, out meterReadingContainer!);                                    
         }
 
         var crudEventContainer = new EntityCrudContainer
@@ -389,11 +389,11 @@ public abstract class Program
                     assetTaskDao.Initialise();
                     meterDao.Initialise();
                     meterReadingDao.Initialise();
-                    var toDoController = new ToDoItemController(toDoDao, toDoContainer, testEventContainer);                    
-                    var assetController = new AssetController(assetDao, assetContainer, testEventContainer);                    
-                    var assetTaskController = new AssetTaskController(assetTaskDao, assetTaskContainer, testEventContainer);                    
-                    var meterController = new MeterController(meterDao, meterReadingDao, meterContainer, testEventContainer);                    
-                    var meterReadingController = new MeterReadingController(meterReadingDao, meterReadingContainer, testEventContainer);                    
+                    var toDoController = new ToDoItemController(toDoDao, toDoContainer!, testEventContainer);                    
+                    var assetController = new AssetController(assetDao, assetContainer!, testEventContainer);                    
+                    var assetTaskController = new AssetTaskController(assetTaskDao, assetTaskContainer!, testEventContainer);                    
+                    var meterController = new MeterController(meterDao, meterReadingDao, meterContainer!, testEventContainer);                    
+                    var meterReadingController = new MeterReadingController(meterReadingDao, meterReadingContainer!, testEventContainer);                    
 
                     return new WebClientService(clientIds, entityInsertCount, entityUpdateCount,
                         deletePerEntityTypeCount,
@@ -420,11 +420,11 @@ public abstract class Program
                     var meterDao = provider.GetRequiredService<IMeterDao>();
                     var meterReadingDao = provider.GetRequiredService<IMeterReadingDao>();
 
-                    var toDoController = new ToDoItemController(toDoDao, toDoContainer, testEventContainer);
-                    var assetController = new AssetController(assetDao, assetContainer, testEventContainer);
-                    var assetTaskController = new AssetTaskController(assetTaskDao, assetTaskContainer, testEventContainer);
-                    var meterController = new MeterController(meterDao, meterReadingDao, meterContainer, testEventContainer);
-                    var meterReadingController = new MeterReadingController(meterReadingDao, meterReadingContainer, testEventContainer);
+                    var toDoController = new ToDoItemController(toDoDao, toDoContainer!, testEventContainer);
+                    var assetController = new AssetController(assetDao, assetContainer!, testEventContainer);
+                    var assetTaskController = new AssetTaskController(assetTaskDao, assetTaskContainer!, testEventContainer);
+                    var meterController = new MeterController(meterDao, meterReadingDao, meterContainer!, testEventContainer);
+                    var meterReadingController = new MeterReadingController(meterReadingDao, meterReadingContainer!, testEventContainer);
 
                     return new MessageBrokerService(mqttBrokers, entityUpdateCount, meterReadingsPerMeterCount, testEventContainer,
                         toDoController, assetController, assetTaskController, meterController, meterReadingController,
@@ -450,11 +450,11 @@ public abstract class Program
                     var meterDao = provider.GetRequiredService<IMeterDao>();
                     var meterReadingDao = provider.GetRequiredService<IMeterReadingDao>();
 
-                    var toDoController = new ToDoItemController(toDoDao, toDoContainer, testEventContainer);
-                    var assetController = new AssetController(assetDao, assetContainer, testEventContainer);
-                    var assetTaskController = new AssetTaskController(assetTaskDao, assetTaskContainer, testEventContainer);
-                    var meterController = new MeterController(meterDao, meterReadingDao, meterContainer, testEventContainer);
-                    var meterReadingController = new MeterReadingController(meterReadingDao, meterReadingContainer, testEventContainer);
+                    var toDoController = new ToDoItemController(toDoDao, toDoContainer!, testEventContainer);
+                    var assetController = new AssetController(assetDao, assetContainer!, testEventContainer);
+                    var assetTaskController = new AssetTaskController(assetTaskDao, assetTaskContainer!, testEventContainer);
+                    var meterController = new MeterController(meterDao, meterReadingDao, meterContainer!, testEventContainer);
+                    var meterReadingController = new MeterReadingController(meterReadingDao, meterReadingContainer!, testEventContainer);
 
                     return new CompareService(clientIds, testEventContainer, doItems, doAssets,
                         doAssetTasks, toDoController, assetController, assetTaskController, assetClient,

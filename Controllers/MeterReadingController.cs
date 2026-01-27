@@ -16,7 +16,7 @@ public class MeterReadingController : EntityController
         TestEventContainer testEventContainer) : base(meterReadingEntityContainer, testEventContainer)
     {
         _dao = dao;
-        FlushTimer = new Timer(FlushTimerCallback, null, FlushTimeOut, FlushTimeOut);
+        FlushTimer = new Timer(FlushTimerCallback!, null, FlushTimeOut, FlushTimeOut);
     }
 
     public async Task AddMeterReadingAsync(MeterReading meterReading)
@@ -150,8 +150,8 @@ public class MeterReadingController : EntityController
             var batchToFlush = _currentDeleteBatch;
             _currentDeleteBatch = [];
             
-            await _dao.BatchDelete(batchToFlush.Where(x => x.meterReading.Id.HasValue)
-                .Select(x => x.meterReading.Id.Value));
+            await _dao.BatchDelete(batchToFlush.Where(x => x.meterReading.Id!.HasValue)
+                .Select(x => x.meterReading.Id!.Value));
             EntityContainer?.RemoveDeleteMessageIds(batchToFlush.Select(x => x.messageId).ToList());
         }
         finally

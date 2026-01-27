@@ -141,7 +141,7 @@ public class MeterReadingPgDao : PgDao<MeterReading>, IMeterReadingDao
             for (var retry = 0; retry < maxRetries; retry++)
                 try
                 {
-                    var idsToUpdate = meterReadings.Select(i => i.Id).Where(id => id.HasValue).Select(id => id.Value).ToList();
+                    var idsToUpdate = meterReadings.Select(i => i.Id).Where(id => id!.HasValue).Select(id => id!.Value).ToList();
 
                     if (!idsToUpdate.Any())
                     {
@@ -303,9 +303,9 @@ public class MeterReadingPgDao : PgDao<MeterReading>, IMeterReadingDao
                                WHERE ID = @id", 
                             connection, transaction))
                         {
-                            updateCmd.Parameters.AddWithValue("id", reading.Id.Value);
-                            updateCmd.Parameters.AddWithValue("reading", reading.Reading);
-                            updateCmd.Parameters.AddWithValue("readingOn", reading.ReadingOn);
+                            updateCmd.Parameters.AddWithValue("id", reading.Id!.Value);
+                            updateCmd.Parameters.AddWithValue("reading", reading.Reading ?? (object)DBNull.Value);
+                            updateCmd.Parameters.AddWithValue("readingOn", reading.ReadingOn ?? (object)DBNull.Value);
                             updateCmd.Parameters.AddWithValue("version", reading.Version);
                             updateCmd.Parameters.AddWithValue("messageId", reading.MessageId);
 
