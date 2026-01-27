@@ -52,11 +52,11 @@ public abstract class Program
         var entityUpdateCount = 1;
         var deletePerEntityTypeCount = 5;        
         var meterReadingsPerMeterCount = 4;
-        var tasksPerAssetCount = 1;
+        var tasksPerAssetCount = 4;
         var useSqlite = false;
         var usePg = !useSqlite;
         clientIds = ["1", "2", "3", "4"];        
-        clientIds = ["1", "2"];                                                                    
+        //clientIds = ["1", "2"];                                                                    
         //clientIds = ["1"];        
         //clientIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];        
 
@@ -153,7 +153,7 @@ public abstract class Program
         if (usePython)
         {
             pythonHost = "192.168.10.120"; //stm32
-            pythonHost = "192.168.10.115"; //pico-w            
+            //pythonHost = "192.168.10.115"; //pico-w            
             //pythonHost = "192.168.10.174"; //bbb
             //pythonHost = "192.168.10.198"; //emile-dev            
             //pythonHost = "192.168.10.183"; //pi5 
