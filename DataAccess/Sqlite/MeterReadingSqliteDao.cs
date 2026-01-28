@@ -8,25 +8,26 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
 {
     private readonly string _tableName;
 
-    public MeterReadingSqliteDao(IDbConnectionPool connectionPool) : base(connectionPool)
+    public MeterReadingSqliteDao(IDbConnectionPool connectionPool, string tableName = "meter_reading") : base(connectionPool)
     {
-        _tableName = "meter_reading";
+        _tableName = tableName;
     }
 
     public async Task<int> AddMeterReading(string clientId, MeterReading meterReading)
     {
         var connection = GetConnection();
 
-        var sql = $"INSERT INTO {_tableName} (CLIENT_ID, REMOTE_ID, VERSION, METER_ID, READING, READING_ON)" +
-                  $"VALUES (@CLIENT_ID, @REMOTE_ID, @VERSION, @METER_ID, @READING, @READING_ON);";
+        var sql = $"INSERT INTO {_tableName} (ID, VERSION, CLIENT_ID, MESSAGE_ID, METER_ID, READING, READING_ON)" +
+                  $"VALUES (@ID, @VERSION, @CLIENT_ID, @MESSAGE_ID, @METER_ID, @READING, @READING_ON);";
 
         int rowsAffected;
 
         await using (var cmd = new SqliteCommand(sql, connection))
         {
-            cmd.Parameters.AddWithValue("@CLIENT_ID", clientId);
-            cmd.Parameters.AddWithValue("@REMOTE_ID", meterReading.Id);
+            cmd.Parameters.AddWithValue("@ID", meterReading.Id);
             cmd.Parameters.AddWithValue("@VERSION", 0);
+            cmd.Parameters.AddWithValue("@CLIENT_ID", clientId);
+            cmd.Parameters.AddWithValue("@MESSAGE_ID", meterReading.MessageId);
             cmd.Parameters.AddWithValue("@METER_ID", meterReading.MeterId);
             cmd.Parameters.AddWithValue("@READING_ON", meterReading.ReadingOn);
 
@@ -49,8 +50,9 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
         var connection = GetConnection();
 
         await using var cmd = new SqliteCommand(
-            $"UPDATE {_tableName} SET VERSION = VERSION + 1, READING = @READING, READING_ON = @READING_ON WHERE REMOTE_ID = {meterReading.Id}",
+            $"UPDATE {_tableName} SET VERSION = VERSION + 1, MESSAGE_ID = @MESSAGE_ID, READING = @READING, READING_ON = @READING_ON WHERE ID = {meterReading.Id}",
             connection);
+        cmd.Parameters.AddWithValue("@MESSAGE_ID", meterReading.MessageId);
         cmd.Parameters.AddWithValue("@READING", meterReading.Reading);
         cmd.Parameters.AddWithValue("@READING_ON", meterReading.ReadingOn);
 
@@ -65,7 +67,7 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
         var connection = GetConnection();
 
         await using var cmd = new SqliteCommand(
-            $"SELECT remote_id, version, meter_id, reading, reading_on, client_id FROM {_tableName} WHERE remote_id = @id",
+            $"SELECT ID, VERSION, MESSAGE_ID, METER_ID, READING, READING_ON, CLIENT_ID FROM {_tableName} WHERE ID = @id",
             connection);
         cmd.Parameters.AddWithValue("@id", meterReadingId);
 
@@ -74,13 +76,14 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
 
         if (!reader.Read()) return null;
 
-        var localMeterReading = new MeterReading(reader.GetInt32(5))
+        var localMeterReading = new MeterReading(reader.GetInt32(6))
         {
             Id = reader.GetInt64(0),
             Version = reader.GetInt32(1),
-            MeterId = reader.GetInt64(2),
-            Reading = reader.GetDecimal(3),
-            ReadingOn = reader.GetDateTime(4)
+            MessageId = reader.GetString(2),
+            MeterId = reader.GetInt64(3),
+            Reading = reader.GetDecimal(4),
+            ReadingOn = reader.GetDateTime(5)
         };
 
         return localMeterReading;
@@ -91,7 +94,7 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
         var connection = GetConnection();
 
         await using var cmd = new SqliteCommand(
-            $"SELECT REMOTE_ID, VERSION, METER_ID, READING, READING_ON, CLIENT_ID FROM {_tableName} WHERE METER_ID = {meterId} ORDER BY READING_ON ASC", connection);
+            $"SELECT ID, VERSION, MESSAGE_ID, METER_ID, READING, READING_ON, CLIENT_ID FROM {_tableName} WHERE METER_ID = {meterId} ORDER BY READING_ON ASC", connection);
 
         await using var reader = await cmd.ExecuteReaderAsync();
 
@@ -103,13 +106,14 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
 
         while (await reader.ReadAsync())
         {
-            var meterReading = new MeterReading(reader.GetInt32(5))
+            var meterReading = new MeterReading(reader.GetInt32(6))
             {
                 Id = reader.GetInt64(0),
                 Version = reader.GetInt32(1),
-                MeterId = reader.GetInt64(2),
-                Reading = reader.GetDecimal(3),
-                ReadingOn = reader.GetDateTime(4)
+                MessageId = reader.GetString(2),
+                MeterId = reader.GetInt64(3),
+                Reading = reader.GetDecimal(4),
+                ReadingOn = reader.GetDateTime(5)
             };
 
             result.Add(meterReading);
@@ -121,7 +125,7 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
     {
         var connection = GetConnection();
         await using var cmd = new SqliteCommand(
-            $"DELETE FROM {_tableName} WHERE REMOTE_ID = '{meterReadingId}' AND CLIENT_ID = '{clientId}'",
+            $"DELETE FROM {_tableName} WHERE ID = {meterReadingId} AND CLIENT_ID = {clientId}",
             connection);
 
         var rowsAffected = await cmd.ExecuteNonQueryAsync();
@@ -137,7 +141,7 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
         var connection = GetConnection();
 
         await using var cmd = new SqliteCommand(
-            $"SELECT version from {_tableName} where remote_id = '{meterReadingId}' and client_id = '{clientId}'",
+            $"SELECT VERSION FROM {_tableName} WHERE ID = {meterReadingId} AND CLIENT_ID = {clientId}",
             connection);
 
         await using var reader = await cmd.ExecuteReaderAsync();
@@ -154,7 +158,7 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
         var connection = GetConnection();
 
         await using var cmdCount =
-            new SqliteCommand($"SELECT count(*) from {_tableName} where client_id = '{clientId}'", connection);
+            new SqliteCommand($"SELECT COUNT(*) FROM {_tableName} WHERE CLIENT_ID = {clientId}", connection);
         await using var readerCount = await cmdCount.ExecuteReaderAsync();
 
         if (readerCount.Read())
@@ -170,7 +174,7 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
         var connection = GetConnection();
 
         await using var cmdCount =
-            new SqliteCommand($"SELECT count(*) from {_tableName}", connection);
+            new SqliteCommand($"SELECT COUNT(*) FROM {_tableName}", connection);
         await using var readerCount = await cmdCount.ExecuteReaderAsync();
 
         if (readerCount.Read())
@@ -189,7 +193,11 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
         cmd.ExecuteNonQuery();
 
         command =
-            $"CREATE TABLE {_tableName} (CLIENT_ID TEXT, REMOTE_ID TEXT, VERSION INTEGER, METER_ID INTEGER NOT NULL, READING NUMERIC, READING_ON REAL)";
+            $"CREATE TABLE {_tableName} (ID BIGINT, VERSION INTEGER, CLIENT_ID INTEGER, MESSAGE_ID TEXT, METER_ID BIGINT NOT NULL, READING NUMERIC, READING_ON REAL)";
+        cmd = new SqliteCommand(command, connection);
+        cmd.ExecuteNonQuery();
+        
+        command = $"CREATE UNIQUE INDEX idx_{_tableName}_message_id ON {_tableName}(MESSAGE_ID)";
         cmd = new SqliteCommand(command, connection);
         cmd.ExecuteNonQuery();
 
@@ -211,13 +219,53 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
         throw new NotImplementedException();
     }
 
-    public Task<int> GetEntityVersion(long entityId)
+    public async Task<int> GetEntityVersion(long entityId)
     {
-        throw new NotImplementedException();
+        var connection = GetConnection();
+
+        await using var cmd = new SqliteCommand(
+            $"SELECT VERSION FROM {_tableName} WHERE ID = {entityId}",
+            connection);
+
+        try
+        {
+            await using var reader = await cmd.ExecuteReaderAsync();
+            if (!reader.HasRows)
+            {
+                ReturnConnection(connection);
+                return -1;
+            }
+
+            reader.Read();
+            var version = reader.GetInt32(0);
+            ReturnConnection(connection);
+            return version;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
-    public Task<int> GetEntityCount()
+    public async Task<int> GetEntityCount()
     {
-        throw new NotImplementedException();
+        var connection = GetConnection();
+
+        var cmd = new SqliteCommand($"SELECT COUNT(*) FROM {_tableName}", connection);
+
+        try
+        {
+            await using var reader = await cmd.ExecuteReaderAsync();
+            reader.Read();
+            var count = reader.GetInt32(0);
+            ReturnConnection(connection);
+            return count;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 }

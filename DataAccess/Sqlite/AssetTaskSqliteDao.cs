@@ -8,9 +8,9 @@ public class AssetTaskSqliteDao : SqliteDao, IAssetTaskDao
 {
     private readonly string _tableName;
 
-    public AssetTaskSqliteDao(IDbConnectionPool connectionPool) : base(connectionPool)
+    public AssetTaskSqliteDao(IDbConnectionPool connectionPool, string tableName = "asset_tasks") : base(connectionPool)
     {
-        _tableName = "asset_tasks";
+        _tableName = tableName;
     }
 
     public async Task<int> AddAssetTask(string clientId, AssetTask assetTask)
@@ -18,7 +18,7 @@ public class AssetTaskSqliteDao : SqliteDao, IAssetTaskDao
         var connection = GetConnection();
 
         await using var cmd = new SqliteCommand(
-            $"INSERT INTO {_tableName} (CLIENT_ID, REMOTE_ID, VERSION, CODE, DESCRIPTION, IS_RFS) VALUES ('{clientId}', '{assetTask.Id}', {assetTask.Version}, '{assetTask.Code}', '{assetTask.Description}', {assetTask.IsRfs})",
+            $"INSERT INTO {_tableName} (ID, VERSION, CLIENT_ID, MESSAGE_ID, CODE, DESCRIPTION, IS_RFS) VALUES ({assetTask.Id}, {assetTask.Version}, {clientId}, '{assetTask.MessageId}', '{assetTask.Code}', '{assetTask.Description}', {assetTask.IsRfs})",
             connection);
 
         int rowsAffected;
@@ -42,7 +42,7 @@ public class AssetTaskSqliteDao : SqliteDao, IAssetTaskDao
         var connection = GetConnection();
 
         await using var cmd = new SqliteCommand(
-            $"UPDATE {_tableName} SET VERSION = {assetTask.Version}, CODE = '{assetTask.Code}', DESCRIPTION = '{assetTask.Description}', IS_RFS = {assetTask.IsRfs} WHERE REMOTE_ID = '{assetTask.Id}' AND CLIENT_ID = '{clientId}'",
+            $"UPDATE {_tableName} SET VERSION = {assetTask.Version}, MESSAGE_ID = '{assetTask.MessageId}', CODE = '{assetTask.Code}', DESCRIPTION = '{assetTask.Description}', IS_RFS = {assetTask.IsRfs} WHERE ID = {assetTask.Id} AND CLIENT_ID = {clientId}",
             connection);
 
         var rowsAffected = await cmd.ExecuteNonQueryAsync();
@@ -55,7 +55,7 @@ public class AssetTaskSqliteDao : SqliteDao, IAssetTaskDao
     {
         var connection = GetConnection();
         await using var cmd = new SqliteCommand(
-            $"SELECT remote_id, version, code, description, is_rfs, client_id FROM {_tableName} WHERE remote_id = @id",
+            $"SELECT ID, VERSION, MESSAGE_ID, CODE, DESCRIPTION, IS_RFS, CLIENT_ID FROM {_tableName} WHERE ID = @id",
             connection);
         cmd.Parameters.AddWithValue("@id", assetTaskId);
 
@@ -64,13 +64,14 @@ public class AssetTaskSqliteDao : SqliteDao, IAssetTaskDao
 
         if (!reader.Read()) return null;
 
-        var localAssetTask = new AssetTask(reader.GetInt32(5))
+        var localAssetTask = new AssetTask(reader.GetInt32(6))
         {
             Id = reader.GetInt64(0),
             Version = reader.GetInt32(1),
-            Code = reader.GetString(2),
-            Description = reader.GetString(3),
-            IsRfs = reader.GetBoolean(4)
+            MessageId = reader.GetString(2),
+            Code = reader.GetString(3),
+            Description = reader.GetString(4),
+            IsRfs = reader.GetBoolean(5)
         };
 
         return localAssetTask;
@@ -82,7 +83,7 @@ public class AssetTaskSqliteDao : SqliteDao, IAssetTaskDao
         var connection = GetConnection();
 
         await using var cmd = new SqliteCommand(
-            $"SELECT version from {_tableName} where remote_id = '{assetTaskId}' and client_id = '{clientId}'",
+            $"SELECT VERSION FROM {_tableName} WHERE ID = {assetTaskId} AND CLIENT_ID = {clientId}",
             connection);
 
         await using var reader = await cmd.ExecuteReaderAsync();
@@ -99,7 +100,7 @@ public class AssetTaskSqliteDao : SqliteDao, IAssetTaskDao
         var connection = GetConnection();
 
         await using var cmdCount =
-            new SqliteCommand($"SELECT count(*) from {_tableName} where client_id = '{clientId}'", connection);
+            new SqliteCommand($"SELECT COUNT(*) FROM {_tableName} WHERE CLIENT_ID = {clientId}", connection);
         await using var readerCount = await cmdCount.ExecuteReaderAsync();
 
         if (readerCount.Read())
@@ -115,7 +116,7 @@ public class AssetTaskSqliteDao : SqliteDao, IAssetTaskDao
         var connection = GetConnection();
 
         await using var cmdCount =
-            new SqliteCommand($"SELECT count(*) from {_tableName}", connection);
+            new SqliteCommand($"SELECT COUNT(*) FROM {_tableName}", connection);
         await using var readerCount = await cmdCount.ExecuteReaderAsync();
 
         if (readerCount.Read())
@@ -129,7 +130,7 @@ public class AssetTaskSqliteDao : SqliteDao, IAssetTaskDao
     {
         var connection = GetConnection();
         await using var cmd = new SqliteCommand(
-            $"DELETE FROM {_tableName} WHERE REMOTE_ID = '{assetId}' AND CLIENT_ID = '{clientId}'",
+            $"DELETE FROM {_tableName} WHERE ID = {assetId} AND CLIENT_ID = {clientId}",
             connection);
 
         var rowsAffected = await cmd.ExecuteNonQueryAsync();
@@ -148,7 +149,11 @@ public class AssetTaskSqliteDao : SqliteDao, IAssetTaskDao
         cmd.ExecuteNonQuery();
 
         command =
-            $"CREATE TABLE {_tableName} (CLIENT_ID TEXT, REMOTE_ID TEXT, VERSION INTEGER, CODE TEXT, DESCRIPTION TEXT, IS_RFS INTEGER)";
+            $"CREATE TABLE {_tableName} (ID BIGINT, VERSION INTEGER, CLIENT_ID INTEGER, MESSAGE_ID TEXT, CODE TEXT, DESCRIPTION TEXT, IS_RFS INTEGER)";
+        cmd = new SqliteCommand(command, connection);
+        cmd.ExecuteNonQuery();
+        
+        command = $"CREATE UNIQUE INDEX idx_{_tableName}_message_id ON {_tableName}(MESSAGE_ID)";
         cmd = new SqliteCommand(command, connection);
         cmd.ExecuteNonQuery();
 
@@ -170,13 +175,53 @@ public class AssetTaskSqliteDao : SqliteDao, IAssetTaskDao
         throw new NotImplementedException();
     }
 
-    public Task<int> GetEntityVersion(long entityId)
+    public async Task<int> GetEntityVersion(long entityId)
     {
-        throw new NotImplementedException();
+        var connection = GetConnection();
+
+        await using var cmd = new SqliteCommand(
+            $"SELECT VERSION FROM {_tableName} WHERE ID = {entityId}",
+            connection);
+
+        try
+        {
+            await using var reader = await cmd.ExecuteReaderAsync();
+            if (!reader.HasRows)
+            {
+                ReturnConnection(connection);
+                return -1;
+            }
+
+            reader.Read();
+            var version = reader.GetInt32(0);
+            ReturnConnection(connection);
+            return version;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
-    public Task<int> GetEntityCount()
+    public async Task<int> GetEntityCount()
     {
-        throw new NotImplementedException();
+        var connection = GetConnection();
+
+        var cmd = new SqliteCommand($"SELECT COUNT(*) FROM {_tableName}", connection);
+
+        try
+        {
+            await using var reader = await cmd.ExecuteReaderAsync();
+            reader.Read();
+            var count = reader.GetInt32(0);
+            ReturnConnection(connection);
+            return count;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 }

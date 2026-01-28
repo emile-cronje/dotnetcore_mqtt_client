@@ -8,16 +8,16 @@ public class ToDoItemSqliteDao : SqliteDao, IToDoItemDao
 {
     private readonly string _tableName;
 
-    public ToDoItemSqliteDao(IDbConnectionPool connectionPool) : base(connectionPool)
+    public ToDoItemSqliteDao(IDbConnectionPool connectionPool, string tableName = "todo_item") : base(connectionPool)
     {
-        _tableName = "todo_item";
+        _tableName = tableName;
     }
 
     public async Task<ToDoItem?> GetItem(long itemId)
     {
         var connection = GetConnection();
         await using var cmd = new SqliteCommand(
-            $"SELECT id, version, name, description, is_complete, client_id, message_id FROM {_tableName} WHERE id = @id",
+            $"SELECT ID, VERSION, MESSAGE_ID, NAME, DESCRIPTION, IS_COMPLETE, CLIENT_ID FROM {_tableName} WHERE ID = @id",
             connection);
         cmd.Parameters.AddWithValue("@id", itemId);
 
@@ -26,14 +26,14 @@ public class ToDoItemSqliteDao : SqliteDao, IToDoItemDao
 
         if (!reader.Read()) return null;
 
-        var localTodoItem = new ToDoItem(reader.GetInt32(5))
+        var localTodoItem = new ToDoItem(reader.GetInt32(6))
         {
             Id = reader.GetInt64(0),
             Version = reader.GetInt32(1),
-            Name = reader.GetString(2),
-            Description = reader.GetString(3),
-            IsComplete = reader.GetBoolean(4),
-            MessageId = reader.GetString(5)
+            MessageId = reader.GetString(2),
+            Name = reader.GetString(3),
+            Description = reader.GetString(4),
+            IsComplete = reader.GetBoolean(5)
         };
 
         return localTodoItem;
@@ -63,16 +63,44 @@ public class ToDoItemSqliteDao : SqliteDao, IToDoItemDao
         cmd.ExecuteNonQuery();
 
         command =
-            $"CREATE TABLE {_tableName} (ID INTEGER PRIMARY KEY, VERSION INTEGER, CLIENT_ID INTEGER, MESSAGE_ID INTEGER, NAME TEXT, DESCRIPTION TEXT, IS_COMPLETE INTEGER)";
+            $"CREATE TABLE {_tableName} (ID BIGINT, VERSION INTEGER, CLIENT_ID INTEGER, MESSAGE_ID TEXT, NAME TEXT, DESCRIPTION TEXT, IS_COMPLETE INTEGER)";
+        cmd = new SqliteCommand(command, connection);
+        cmd.ExecuteNonQuery();
+        
+        command = $"CREATE UNIQUE INDEX idx_{_tableName}_message_id ON {_tableName}(MESSAGE_ID)";
         cmd = new SqliteCommand(command, connection);
         cmd.ExecuteNonQuery();
 
         ReturnConnection(connection);
     }
 
-    public Task<int> GetEntityVersion(long entityId)
+    public async Task<int> GetEntityVersion(long entityId)
     {
-        throw new NotImplementedException();
+        var connection = GetConnection();
+
+        await using var cmd = new SqliteCommand(
+            $"SELECT VERSION FROM {_tableName} WHERE ID = {entityId}",
+            connection);
+
+        try
+        {
+            await using var reader = await cmd.ExecuteReaderAsync();
+            if (!reader.HasRows)
+            {
+                ReturnConnection(connection);
+                return -1;
+            }
+
+            reader.Read();
+            var version = reader.GetInt32(0);
+            ReturnConnection(connection);
+            return version;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     public async Task<int> GetEntityCount()
@@ -81,7 +109,7 @@ public class ToDoItemSqliteDao : SqliteDao, IToDoItemDao
 
         var connection = GetConnection();
         await using var cmdCount =
-            new SqliteCommand($"SELECT count(*) from {_tableName}", connection);
+            new SqliteCommand($"SELECT COUNT(*) FROM {_tableName}", connection);
         await using var readerCount = await cmdCount.ExecuteReaderAsync();
 
         if (readerCount.Read())
@@ -95,7 +123,7 @@ public class ToDoItemSqliteDao : SqliteDao, IToDoItemDao
     {
         var connection = GetConnection();
         await using var cmd = new SqliteCommand(
-            $"UPDATE {_tableName} SET VERSION = {toDoItem.Version}, NAME = '{toDoItem.Name}', DESCRIPTION = '{toDoItem.Description}', IS_COMPLETE = {toDoItem.IsComplete}, MESSAGE_ID = {toDoItem.MessageId} WHERE ID = '{toDoItem.Id}'",
+            $"UPDATE {_tableName} SET VERSION = {toDoItem.Version}, MESSAGE_ID = '{toDoItem.MessageId}', NAME = '{toDoItem.Name}', DESCRIPTION = '{toDoItem.Description}', IS_COMPLETE = {toDoItem.IsComplete} WHERE ID = {toDoItem.Id}",
             connection);
 
         await cmd.ExecuteNonQueryAsync();
@@ -106,7 +134,7 @@ public class ToDoItemSqliteDao : SqliteDao, IToDoItemDao
     {
         var connection = GetConnection();
         await using var cmd = new SqliteCommand(
-            $"DELETE FROM {_tableName} WHERE ID = '{itemId}'",
+            $"DELETE FROM {_tableName} WHERE ID = {itemId}",
             connection);
 
         await cmd.ExecuteNonQueryAsync();
@@ -120,7 +148,7 @@ public class ToDoItemSqliteDao : SqliteDao, IToDoItemDao
 
         var connection = GetConnection();
         await using var cmd = new SqliteCommand(
-            $"SELECT version from {_tableName} where id = '{itemId}'",
+            $"SELECT VERSION FROM {_tableName} WHERE ID = {itemId}",
             connection);
 
         await using var reader = await cmd.ExecuteReaderAsync();
@@ -137,7 +165,7 @@ public class ToDoItemSqliteDao : SqliteDao, IToDoItemDao
 
         var connection = GetConnection();
         await using var cmdCount =
-            new SqliteCommand($"SELECT count(*) from {_tableName}", connection);
+            new SqliteCommand($"SELECT COUNT(*) FROM {_tableName}", connection);
         await using var readerCount = await cmdCount.ExecuteReaderAsync();
 
         if (readerCount.Read())
@@ -152,7 +180,7 @@ public class ToDoItemSqliteDao : SqliteDao, IToDoItemDao
         var connection = GetConnection();
 
         await using var cmd = new SqliteCommand(
-            $"INSERT INTO {_tableName} (CLIENT_ID, ID, MESSAGE_ID, VERSION, NAME, DESCRIPTION, IS_COMPLETE) VALUES ('{clientId}', '{toDoItem.Id}', {toDoItem.MessageId}, {toDoItem.Version}, '{toDoItem.Name}', '{toDoItem.Description}', {toDoItem.IsComplete})",
+            $"INSERT INTO {_tableName} (ID, VERSION, CLIENT_ID, MESSAGE_ID, NAME, DESCRIPTION, IS_COMPLETE) VALUES ({toDoItem.Id}, {toDoItem.Version}, {clientId}, '{toDoItem.MessageId}', '{toDoItem.Name}', '{toDoItem.Description}', {toDoItem.IsComplete})",
             connection);
 
         try

@@ -48,16 +48,16 @@ public abstract class Program
         var dotNetPort = 8001; // c#        
         var nodePort = 3002; // nodejs - ts        
         var credentials = "foo:bar";
-        var entityInsertCount = 10;
+        var entityInsertCount = 2;
         var entityUpdateCount = 1;
-        var deletePerEntityTypeCount = 5;        
-        var meterReadingsPerMeterCount = 10;
-        var tasksPerAssetCount = 5;
-        var useSqlite = false;
+        var deletePerEntityTypeCount = 1;        
+        var meterReadingsPerMeterCount = 5;
+        var tasksPerAssetCount = 1;
+        var useSqlite = true;
         var usePg = !useSqlite;
         clientIds = ["1", "2", "3", "4"];        
-        //clientIds = ["1", "2"];                                                                    
-        //clientIds = ["1"];        
+        clientIds = ["1", "2"];                                                                    
+        clientIds = ["1"];        
         //clientIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];        
 
         // entities
@@ -478,6 +478,56 @@ public abstract class Program
         var mqttTask = mqttServiceHost.RunAsync();
         var webClientTask = webClientServiceHost.RunAsync();
         var compareTask = compareServiceHost.RunAsync();
+
+        // Calculate total expected operations
+        int totalInserts = clientIds.Count * entityInsertCount * (doItems ? 1 : 0) +
+                          clientIds.Count * entityInsertCount * (doAssets ? 1 : 0) +
+                          clientIds.Count * entityInsertCount * (doMeters ? 1 : 0) +
+                          (clientIds.Count * entityInsertCount * (doAssets ? tasksPerAssetCount : 0)) +
+                          (clientIds.Count * entityInsertCount * (doMeters ? meterReadingsPerMeterCount : 0));
+        
+        int totalUpdates = clientIds.Count * entityInsertCount * entityUpdateCount * 
+                          ((doItems ? 1 : 0) + (doAssets ? 1 : 0) + (doMeters ? 1 : 0) +
+                           (doAssets ? tasksPerAssetCount : 0) + (doMeters ? meterReadingsPerMeterCount : 0));
+        
+        int totalDeletes = deletePerEntityTypeCount * 
+                          ((doItems ? 1 : 0) + (doAssets ? 1 : 0) + (doMeters ? 1 : 0) +
+                           (doAssets ? 1 : 0) + (doMeters ? 1 : 0));
+        
+        int totalOperations = totalInserts + totalUpdates + totalDeletes;
+
+        // // Start progress reporter (fire and forget)
+        // _ = Task.Run(async () =>
+        // {
+        //     Console.WriteLine($"Progress monitoring started. Total operations expected: {totalOperations}");
+        //     var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            
+        //     while (!mqttTask.IsCompleted || !webClientTask.IsCompleted || !compareTask.IsCompleted)
+        //     {
+        //         await Task.Delay(5000);
+
+        //         int pendingInserts = testEventContainer.EntityContainers
+        //             .Sum(x => x.Value?.GetInsertMessageIdsCount() ?? 0);
+        //         int pendingUpdates = testEventContainer.EntityContainers
+        //             .Sum(x => x.Value?.GetUpdateMessageIdsCount() ?? 0);
+        //         int pendingDeletes = testEventContainer.EntityContainers
+        //             .Sum(x => x.Value?.GetDeleteMessageIdsCount() ?? 0);
+                
+        //         int totalPending = pendingInserts + pendingUpdates + pendingDeletes;
+        //         int processed = totalOperations - totalPending;
+        //         double percentComplete = totalOperations > 0 ? (processed * 100.0) / totalOperations : 0;
+
+        //         var elapsedSeconds = stopwatch.Elapsed.TotalSeconds;
+                
+        //         Console.WriteLine($"[{DateTime.UtcNow:HH:mm:ss}] Progress: {percentComplete:F1}% ({processed}/{totalOperations}) | " +
+        //                         $"Pending - Insert: {pendingInserts}, Update: {pendingUpdates}, Delete: {pendingDeletes} | " +
+        //                         $"Elapsed: {elapsedSeconds:F1}s");
+        //         Console.Out.Flush();
+        //     }
+            
+        //     stopwatch.Stop();
+        //     Console.WriteLine($"Progress monitoring complete. Final elapsed: {stopwatch.Elapsed.TotalSeconds:F1}s");
+        // });
 
         await Task.WhenAll(mqttTask, webClientTask, compareTask);
     }
