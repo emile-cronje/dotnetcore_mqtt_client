@@ -28,15 +28,19 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
             cmd.Parameters.AddWithValue("@VERSION", 0);
             cmd.Parameters.AddWithValue("@CLIENT_ID", clientId);
             cmd.Parameters.AddWithValue("@MESSAGE_ID", meterReading.MessageId);
-            cmd.Parameters.AddWithValue("@METER_ID", meterReading.MeterId);
-            cmd.Parameters.AddWithValue("@READING_ON", meterReading.ReadingOn);
-
-            var decimalParam = new SqliteParameter("@READING", SqliteType.Real)
-            {
-                Value = meterReading.Reading
-            };
-
-            cmd.Parameters.Add(decimalParam);
+            cmd.Parameters.AddWithValue("@METER_ID", meterReading.MeterId ?? (object)DBNull.Value);
+            
+            // Convert decimal? to double for REAL type
+            if (meterReading.Reading.HasValue)
+                cmd.Parameters.AddWithValue("@READING", (double)meterReading.Reading.Value);
+            else
+                cmd.Parameters.AddWithValue("@READING", DBNull.Value);
+            
+            // Convert DateTime? to ISO8601 TEXT
+            if (meterReading.ReadingOn.HasValue)
+                cmd.Parameters.AddWithValue("@READING_ON", meterReading.ReadingOn.Value.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+            else
+                cmd.Parameters.AddWithValue("@READING_ON", DBNull.Value);
 
             rowsAffected = await cmd.ExecuteNonQueryAsync();
         }
@@ -53,8 +57,18 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
             $"UPDATE {_tableName} SET VERSION = VERSION + 1, MESSAGE_ID = @MESSAGE_ID, READING = @READING, READING_ON = @READING_ON WHERE ID = {meterReading.Id}",
             connection);
         cmd.Parameters.AddWithValue("@MESSAGE_ID", meterReading.MessageId);
-        cmd.Parameters.AddWithValue("@READING", meterReading.Reading);
-        cmd.Parameters.AddWithValue("@READING_ON", meterReading.ReadingOn);
+        
+        // Convert decimal? to double for REAL type
+        if (meterReading.Reading.HasValue)
+            cmd.Parameters.AddWithValue("@READING", (double)meterReading.Reading.Value);
+        else
+            cmd.Parameters.AddWithValue("@READING", DBNull.Value);
+        
+        // Convert DateTime? to ISO8601 TEXT
+        if (meterReading.ReadingOn.HasValue)
+            cmd.Parameters.AddWithValue("@READING_ON", meterReading.ReadingOn.Value.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+        else
+            cmd.Parameters.AddWithValue("@READING_ON", DBNull.Value);
 
         var rowsAffected = await cmd.ExecuteNonQueryAsync();
 
@@ -88,8 +102,18 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
         cmd.Parameters.AddWithValue("@ID", meterReading.Id);
         cmd.Parameters.AddWithValue("@VERSION", currentVersion);
         cmd.Parameters.AddWithValue("@MESSAGE_ID", meterReading.MessageId);
-        cmd.Parameters.AddWithValue("@READING", meterReading.Reading);
-        cmd.Parameters.AddWithValue("@READING_ON", meterReading.ReadingOn);
+        
+        // Convert decimal? to double for REAL type
+        if (meterReading.Reading.HasValue)
+            cmd.Parameters.AddWithValue("@READING", (double)meterReading.Reading.Value);
+        else
+            cmd.Parameters.AddWithValue("@READING", DBNull.Value);
+        
+        // Convert DateTime? to ISO8601 TEXT
+        if (meterReading.ReadingOn.HasValue)
+            cmd.Parameters.AddWithValue("@READING_ON", meterReading.ReadingOn.Value.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+        else
+            cmd.Parameters.AddWithValue("@READING_ON", DBNull.Value);
 
         var rowsAffected = await cmd.ExecuteNonQueryAsync();
         ReturnConnection(connection);
@@ -121,9 +145,9 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
             Id = reader.GetInt64(0),
             Version = reader.GetInt32(1),
             MessageId = reader.GetString(2),
-            MeterId = reader.GetInt64(3),
-            Reading = reader.GetDecimal(4),
-            ReadingOn = reader.GetDateTime(5)
+            MeterId = reader.IsDBNull(3) ? null : reader.GetInt64(3),
+            Reading = reader.IsDBNull(4) ? null : (decimal)reader.GetDouble(4),
+            ReadingOn = reader.IsDBNull(5) ? null : DateTime.Parse(reader.GetString(5))
         };
 
         return localMeterReading;
@@ -151,9 +175,9 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
                 Id = reader.GetInt64(0),
                 Version = reader.GetInt32(1),
                 MessageId = reader.GetString(2),
-                MeterId = reader.GetInt64(3),
-                Reading = reader.GetDecimal(4),
-                ReadingOn = reader.GetDateTime(5)
+                MeterId = reader.IsDBNull(3) ? null : reader.GetInt64(3),
+                Reading = reader.IsDBNull(4) ? null : (decimal)reader.GetDouble(4),
+                ReadingOn = reader.IsDBNull(5) ? null : DateTime.Parse(reader.GetString(5))
             };
 
             result.Add(meterReading);
@@ -233,7 +257,7 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
         cmd.ExecuteNonQuery();
 
         command =
-            $"CREATE TABLE {_tableName} (ID BIGINT, VERSION INTEGER, CLIENT_ID INTEGER, MESSAGE_ID TEXT, METER_ID BIGINT NOT NULL, READING NUMERIC, READING_ON REAL)";
+            $"CREATE TABLE {_tableName} (ID BIGINT, VERSION INTEGER, CLIENT_ID INTEGER, MESSAGE_ID TEXT, METER_ID BIGINT, READING REAL, READING_ON TEXT)";
         cmd = new SqliteCommand(command, connection);
         cmd.ExecuteNonQuery();
         

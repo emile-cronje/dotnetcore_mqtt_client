@@ -50,10 +50,10 @@ public abstract class Program
         var credentials = "foo:bar";
         var entityInsertCount = 10;
         var entityUpdateCount = 1;
-        var deletePerEntityTypeCount = 1;        
+        var deletePerEntityTypeCount = 5;        
         var meterReadingsPerMeterCount = 10;
         var tasksPerAssetCount = 5;
-        var useSqlite = true;
+        var useSqlite = false;
         var usePg = !useSqlite;
         clientIds = ["1", "2", "3", "4"];        
         clientIds = ["1", "2"];                                                                    
@@ -101,7 +101,7 @@ public abstract class Program
         {
             nodeHost = "localhost";
             //host = "192.168.10.183"; //pi5      
-            nodeHost = "192.168.10.174"; //bbb new                          
+            //nodeHost = "192.168.10.174"; //bbb new                          
             //nodeHost = "192.168.10.183"; //pi5
             //nodeHost = "192.168.10.198"; //emile-dev            
             nodePort = 3002;
