@@ -229,7 +229,7 @@ public class CompareService : BackgroundService, ICompareService
 
             if (localTodoItem.Version != remoteToDoItem.Version)
             {
-                var msg = "Item Version mismatch...";
+                var msg = $"Item {localTodoItem.Id} Version mismatch...";
                 Console.WriteLine(msg);
                 result = (false, msg);
             }

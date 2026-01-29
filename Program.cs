@@ -48,16 +48,16 @@ public abstract class Program
         var dotNetPort = 8001; // c#        
         var nodePort = 3002; // nodejs - ts        
         var credentials = "foo:bar";
-        var entityInsertCount = 2;
+        var entityInsertCount = 10;
         var entityUpdateCount = 1;
         var deletePerEntityTypeCount = 1;        
-        var meterReadingsPerMeterCount = 5;
-        var tasksPerAssetCount = 1;
+        var meterReadingsPerMeterCount = 10;
+        var tasksPerAssetCount = 5;
         var useSqlite = true;
         var usePg = !useSqlite;
         clientIds = ["1", "2", "3", "4"];        
         clientIds = ["1", "2"];                                                                    
-        clientIds = ["1"];        
+        //clientIds = ["1"];        
         //clientIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];        
 
         // entities
@@ -66,8 +66,8 @@ public abstract class Program
         var doMeters = true;
 
         // details
-        var doAssetTasks = doAssets;        
-        var doMeterReadings = doMeters;
+        var doAssetTasks = true;        
+        var doMeterReadings = true;
 
         // actions
         var doMeterAdr = true;        
@@ -89,66 +89,30 @@ public abstract class Program
         int meterUrlIndex = (int)WebUrl.NodeTs;        
         int meterReadingUrlIndex = (int)WebUrl.NodeTs;
 
-        if (usePython)
-        {
-            toDoUrlIndex = (int)WebUrl.Python;
-            assetUrlIndex = (int)WebUrl.Python;
-            assetTaskUrlIndex = (int)WebUrl.Python;       
-            meterUrlIndex = (int)WebUrl.Python;        
-            meterReadingUrlIndex = (int)WebUrl.Python;
-        }
-        
-        if (useNode)
-        {
-            toDoUrlIndex = (int)WebUrl.NodeTs;
-            assetUrlIndex = (int)WebUrl.NodeTs;
-            assetTaskUrlIndex = (int)WebUrl.NodeTs;       
-            meterUrlIndex = (int)WebUrl.NodeTs;        
-            meterReadingUrlIndex = (int)WebUrl.NodeTs;
-        }
-        
-        if (usePythonAndNode)
-        {
-            toDoUrlIndex = (int)WebUrl.Python;
-            assetUrlIndex = (int)WebUrl.NodeTs;
-            assetTaskUrlIndex = (int)WebUrl.NodeTs;       
-            meterUrlIndex = (int)WebUrl.NodeTs;        
-            meterReadingUrlIndex = (int)WebUrl.NodeTs;
-        }
-
-        if (useDotNetAndNode)
-        {
-            toDoUrlIndex = (int)WebUrl.DotNet;
-            assetUrlIndex = (int)WebUrl.NodeTs;
-            assetTaskUrlIndex = (int)WebUrl.NodeTs;       
-            meterUrlIndex = (int)WebUrl.DotNet;        
-            meterReadingUrlIndex = (int)WebUrl.DotNet;
-        }
-
-        if (useDotNetAndPython)
-        {
-            toDoUrlIndex = (int)WebUrl.DotNet;
-            assetUrlIndex = (int)WebUrl.Python;
-            assetTaskUrlIndex = (int)WebUrl.Python;       
-            meterUrlIndex = (int)WebUrl.DotNet;        
-            meterReadingUrlIndex = (int)WebUrl.DotNet;
-        }
-
-        if (useDotNetAndPythonAndNode)
-        {
-            toDoUrlIndex = (int)WebUrl.NodeTs;
-            assetUrlIndex = (int)WebUrl.Python;
-            assetTaskUrlIndex = (int)WebUrl.Python;       
-            meterUrlIndex = (int)WebUrl.DotNet;        
-            meterReadingUrlIndex = (int)WebUrl.DotNet;
-        }
-        
+       
         var webClientUrls = new List<string>
                     {
                         ($"http://{dotNetHost}:{dotNetPort}"),
                         ($"http://{nodeHost}:{nodePort}"),
                         ($"http://{pythonHost}:{pythonPort}")                        
                     };
+
+        if (useNode)
+        {
+            nodeHost = "localhost";
+            //host = "192.168.10.183"; //pi5      
+            nodeHost = "192.168.10.174"; //bbb new                          
+            //nodeHost = "192.168.10.183"; //pi5
+            //nodeHost = "192.168.10.198"; //emile-dev            
+            nodePort = 3002;
+
+            webClientUrls =
+            [
+                ($"http://{nodeHost}:{nodePort}"),
+                ($"http://{nodeHost}:{nodePort}"),
+                ($"http://{nodeHost}:{nodePort}")
+            ];
+        }
 
         if (usePython)
         {
@@ -167,23 +131,7 @@ public abstract class Program
             ];
         }
         
-        if (useNode)
-        {
-            nodeHost = "localhost";
-            //host = "192.168.10.183"; //pi5      
-            nodeHost = "192.168.10.174"; //bbb new                          
-            //nodeHost = "192.168.10.183"; //pi5
-            //nodeHost = "192.168.10.198"; //emile-dev            
-            nodePort = 3002;
-
-            webClientUrls =
-            [
-                ($"http://{nodeHost}:{nodePort}"),
-                ($"http://{nodeHost}:{nodePort}"),
-                ($"http://{nodeHost}:{nodePort}")
-            ];
-        }
-        
+      
         if (useDotNet)
         {
             dotNetHost = "localhost";
@@ -252,7 +200,61 @@ public abstract class Program
                 ($"http://{dotNetHost}:{dotNetPort}")
             ];
         }
+
+        if (usePython)
+        {
+            toDoUrlIndex = (int)WebUrl.Python;
+            assetUrlIndex = (int)WebUrl.Python;
+            assetTaskUrlIndex = (int)WebUrl.Python;       
+            meterUrlIndex = (int)WebUrl.Python;        
+            meterReadingUrlIndex = (int)WebUrl.Python;
+        }
         
+        if (useNode)
+        {
+            toDoUrlIndex = (int)WebUrl.NodeTs;
+            assetUrlIndex = (int)WebUrl.NodeTs;
+            assetTaskUrlIndex = (int)WebUrl.NodeTs;       
+            meterUrlIndex = (int)WebUrl.NodeTs;        
+            meterReadingUrlIndex = (int)WebUrl.NodeTs;
+        }
+        
+        if (usePythonAndNode)
+        {
+            toDoUrlIndex = (int)WebUrl.Python;
+            assetUrlIndex = (int)WebUrl.NodeTs;
+            assetTaskUrlIndex = (int)WebUrl.NodeTs;       
+            meterUrlIndex = (int)WebUrl.NodeTs;        
+            meterReadingUrlIndex = (int)WebUrl.NodeTs;
+        }
+
+        if (useDotNetAndNode)
+        {
+            toDoUrlIndex = (int)WebUrl.DotNet;
+            assetUrlIndex = (int)WebUrl.NodeTs;
+            assetTaskUrlIndex = (int)WebUrl.NodeTs;       
+            meterUrlIndex = (int)WebUrl.DotNet;        
+            meterReadingUrlIndex = (int)WebUrl.DotNet;
+        }
+
+        if (useDotNetAndPython)
+        {
+            toDoUrlIndex = (int)WebUrl.DotNet;
+            assetUrlIndex = (int)WebUrl.Python;
+            assetTaskUrlIndex = (int)WebUrl.Python;       
+            meterUrlIndex = (int)WebUrl.DotNet;        
+            meterReadingUrlIndex = (int)WebUrl.DotNet;
+        }
+
+        if (useDotNetAndPythonAndNode)
+        {
+            toDoUrlIndex = (int)WebUrl.NodeTs;
+            assetUrlIndex = (int)WebUrl.Python;
+            assetTaskUrlIndex = (int)WebUrl.Python;       
+            meterUrlIndex = (int)WebUrl.DotNet;        
+            meterReadingUrlIndex = (int)WebUrl.DotNet;
+        }
+
         var testEventContainer = new TestEventContainer();
         EntityContainer? toDoContainer = null;        
         EntityContainer? assetContainer = null;                

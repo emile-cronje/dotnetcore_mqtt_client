@@ -62,6 +62,46 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
         return rowsAffected;
     }
 
+    public async Task<int> UpdateMeterReadingOld(string clientId, MeterReading meterReading)
+    {
+        var connection = GetConnection();
+
+        // Fetch the current version from the database
+        await using var versionCmd = new SqliteCommand(
+            $"SELECT VERSION FROM {_tableName} WHERE ID = @ID",
+            connection);
+        versionCmd.Parameters.AddWithValue("@ID", meterReading.Id);
+        
+        await using var versionReader = await versionCmd.ExecuteReaderAsync();
+        if (!versionReader.Read())
+        {
+            ReturnConnection(connection);
+            throw new InvalidOperationException($"MeterReading ID {meterReading.Id} not found");
+        }
+        
+        var currentVersion = versionReader.GetInt32(0);
+
+        // Now update using the current version from the database
+        await using var cmd = new SqliteCommand(
+            $"UPDATE {_tableName} SET VERSION = VERSION + 1, MESSAGE_ID = @MESSAGE_ID, READING = @READING, READING_ON = @READING_ON WHERE ID = @ID AND VERSION = @VERSION",
+            connection);
+        cmd.Parameters.AddWithValue("@ID", meterReading.Id);
+        cmd.Parameters.AddWithValue("@VERSION", currentVersion);
+        cmd.Parameters.AddWithValue("@MESSAGE_ID", meterReading.MessageId);
+        cmd.Parameters.AddWithValue("@READING", meterReading.Reading);
+        cmd.Parameters.AddWithValue("@READING_ON", meterReading.ReadingOn);
+
+        var rowsAffected = await cmd.ExecuteNonQueryAsync();
+        ReturnConnection(connection);
+        
+        if (rowsAffected == 0)
+        {
+            throw new InvalidOperationException($"Version mismatch for MeterReading ID {meterReading.Id}. Current DB version {currentVersion}, in-memory version {meterReading.Version}");
+        }
+
+        return rowsAffected;
+    }
+
     public async Task<MeterReading?> GetMeterReading(long meterReadingId)
     {
         var connection = GetConnection();
@@ -200,23 +240,33 @@ public class MeterReadingSqliteDao : SqliteDao, IMeterReadingDao
         command = $"CREATE UNIQUE INDEX idx_{_tableName}_message_id ON {_tableName}(MESSAGE_ID)";
         cmd = new SqliteCommand(command, connection);
         cmd.ExecuteNonQuery();
+        
+        InitializeWalMode(connection);
 
         ReturnConnection(connection);
     }
 
-    public Task BatchInsert(List<MeterReading> meterReadings)
+    public async Task BatchInsert(List<MeterReading> meterReadings)
     {
-        throw new NotImplementedException();
+        foreach (var meterReading in meterReadings) await AddMeterReading(meterReading.ClientId.ToString(), meterReading);
     }
 
-    public Task BatchUpdate(List<MeterReading> meterReadings, int batchSize)
+    public async Task BatchUpdate(List<MeterReading> meterReadings, int batchSize)
     {
-        throw new NotImplementedException();
+        foreach (var meterReading in meterReadings) await UpdateMeterReading(meterReading.ClientId.ToString(), meterReading);
     }
 
-    public Task BatchDelete(IEnumerable<long> ids)
+    public async Task BatchDelete(IEnumerable<long> ids)
     {
-        throw new NotImplementedException();
+        foreach (var id in ids)
+        {
+            var connection = GetConnection();
+            await using var cmd = new SqliteCommand(
+                $"DELETE FROM {_tableName} WHERE ID = {id}",
+                connection);
+            await cmd.ExecuteNonQueryAsync();
+            ReturnConnection(connection);
+        }
     }
 
     public async Task<int> GetEntityVersion(long entityId)

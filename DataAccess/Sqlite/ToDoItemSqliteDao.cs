@@ -70,6 +70,8 @@ public class ToDoItemSqliteDao : SqliteDao, IToDoItemDao
         command = $"CREATE UNIQUE INDEX idx_{_tableName}_message_id ON {_tableName}(MESSAGE_ID)";
         cmd = new SqliteCommand(command, connection);
         cmd.ExecuteNonQuery();
+        
+        InitializeWalMode(connection);
 
         ReturnConnection(connection);
     }
@@ -128,6 +130,47 @@ public class ToDoItemSqliteDao : SqliteDao, IToDoItemDao
 
         await cmd.ExecuteNonQueryAsync();
         ReturnConnection(connection);
+    }
+
+    public async Task UpdateItemOld(ToDoItem toDoItem)
+    {
+        var connection = GetConnection();
+        
+        // Fetch the current version from the database
+        await using var versionCmd = new SqliteCommand(
+            $"SELECT VERSION FROM {_tableName} WHERE ID = @ID",
+            connection);
+        versionCmd.Parameters.AddWithValue("@ID", toDoItem.Id);
+        
+        await using var versionReader = await versionCmd.ExecuteReaderAsync();
+        if (!versionReader.Read())
+        {
+            ReturnConnection(connection);
+            throw new InvalidOperationException($"ToDoItem ID {toDoItem.Id} not found");
+        }
+        
+        var currentVersion = versionReader.GetInt32(0);
+        
+        // Now update using the current version from the database
+        await using var cmd = new SqliteCommand(
+            $"UPDATE {_tableName} SET VERSION = @NEW_VERSION, MESSAGE_ID = @MESSAGE_ID, NAME = @NAME, DESCRIPTION = @DESCRIPTION, IS_COMPLETE = @IS_COMPLETE WHERE ID = @ID AND VERSION = @VERSION",
+            connection);
+
+        cmd.Parameters.AddWithValue("@ID", toDoItem.Id);
+        cmd.Parameters.AddWithValue("@VERSION", currentVersion);
+        cmd.Parameters.AddWithValue("@NEW_VERSION", currentVersion + 1);        
+        cmd.Parameters.AddWithValue("@MESSAGE_ID", toDoItem.MessageId);
+        cmd.Parameters.AddWithValue("@NAME", toDoItem.Name);
+        cmd.Parameters.AddWithValue("@DESCRIPTION", toDoItem.Description);
+        cmd.Parameters.AddWithValue("@IS_COMPLETE", toDoItem.IsComplete);
+
+        var rowsAffected = await cmd.ExecuteNonQueryAsync();
+        ReturnConnection(connection);
+        
+        if (rowsAffected == 0)
+        {
+            throw new InvalidOperationException($"Version mismatch for ToDoItem ID {toDoItem.Id}. Current DB version {currentVersion}, in-memory version {toDoItem.Version}");
+        }
     }
 
     public async Task DeleteItem(long itemId)

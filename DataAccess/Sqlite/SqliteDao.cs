@@ -23,4 +23,15 @@ public class SqliteDao
     {
         _connectionPool.ReturnConnection(connection);
     }
+
+    protected void InitializeWalMode(SqliteConnection connection)
+    {
+        // Enable WAL mode for better concurrency
+        using var cmd = new SqliteCommand("PRAGMA journal_mode = WAL;", connection);
+        cmd.ExecuteNonQuery();
+
+        // Set busy timeout to 5 seconds for automatic retries on lock conflicts
+        cmd.CommandText = "PRAGMA busy_timeout = 5000;";
+        cmd.ExecuteNonQuery();
+    }
 }

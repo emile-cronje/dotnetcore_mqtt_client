@@ -51,6 +51,47 @@ public class AssetSqliteDao : SqliteDao, IAssetDao
         return rowsAffected;
     }
 
+    public async Task<int> UpdateAssetOld(string clientId, Asset asset)
+    {
+        var connection = GetConnection();
+
+        // Fetch the current version from the database
+        await using var versionCmd = new SqliteCommand(
+            $"SELECT VERSION FROM {_tableName} WHERE ID = @ID AND CLIENT_ID = {clientId}",
+            connection);
+        versionCmd.Parameters.AddWithValue("@ID", asset.Id);
+        
+        await using var versionReader = await versionCmd.ExecuteReaderAsync();
+        if (!versionReader.Read())
+        {
+            ReturnConnection(connection);
+            throw new InvalidOperationException($"Asset ID {asset.Id} not found");
+        }
+        
+        var currentVersion = versionReader.GetInt32(0);
+
+        // Now update using the current version from the database
+        await using var cmd = new SqliteCommand(
+            $"UPDATE {_tableName} SET VERSION = VERSION + 1, MESSAGE_ID = @MESSAGE_ID, CODE = @CODE, DESCRIPTION = @DESCRIPTION, IS_MSI = @IS_MSI WHERE CLIENT_ID = {clientId} AND ID = @ID AND VERSION = @VERSION",
+            connection);
+        cmd.Parameters.AddWithValue("@ID", asset.Id);
+        cmd.Parameters.AddWithValue("@VERSION", currentVersion);
+        cmd.Parameters.AddWithValue("@MESSAGE_ID", asset.MessageId);
+        cmd.Parameters.AddWithValue("@CODE", asset.Code);
+        cmd.Parameters.AddWithValue("@DESCRIPTION", asset.Description);
+        cmd.Parameters.AddWithValue("@IS_MSI", asset.IsMsi);
+
+        var rowsAffected = await cmd.ExecuteNonQueryAsync();
+        ReturnConnection(connection);
+        
+        if (rowsAffected == 0)
+        {
+            throw new InvalidOperationException($"Version mismatch for Asset ID {asset.Id}. Current DB version {currentVersion}, in-memory version {asset.Version}");
+        }
+
+        return rowsAffected;
+    }
+
     public async Task<Asset?> GetAsset(long assetId)
     {
         var connection = GetConnection();
@@ -137,19 +178,19 @@ public class AssetSqliteDao : SqliteDao, IAssetDao
         return itemCount;
     }
 
-    public Task BatchInsert(List<Asset> items)
+    public async Task BatchInsert(List<Asset> items)
     {
-        throw new NotImplementedException();
+        foreach (var item in items) await AddAsset(item.ClientId.ToString(), item);
     }
 
-    public Task BatchUpdate(List<Asset> assets, int batchSize)
+    public async Task BatchUpdate(List<Asset> assets, int batchSize)
     {
-        throw new NotImplementedException();
+        foreach (var asset in assets) await UpdateAsset(asset.ClientId.ToString(), asset);
     }
 
-    public Task BatchDelete(IEnumerable<long> ids)
+    public async Task BatchDelete(IEnumerable<long> ids)
     {
-        throw new NotImplementedException();
+        foreach (var id in ids) await DeleteAssetById(id);
     }
 
     public void Initialise()
@@ -168,6 +209,8 @@ public class AssetSqliteDao : SqliteDao, IAssetDao
         command = $"CREATE UNIQUE INDEX idx_{_tableName}_message_id ON {_tableName}(MESSAGE_ID)";
         cmd = new SqliteCommand(command, connection);
         cmd.ExecuteNonQuery();
+        
+        InitializeWalMode(connection);
 
         ReturnConnection(connection);
     }
