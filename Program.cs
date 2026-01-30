@@ -48,15 +48,15 @@ public abstract class Program
         var dotNetPort = 8001; // c#        
         var nodePort = 3002; // nodejs - ts        
         var credentials = "foo:bar";
-        var entityInsertCount = 10;
+        var entityInsertCount = 4;
         var entityUpdateCount = 1;
-        var deletePerEntityTypeCount = 5;        
-        var meterReadingsPerMeterCount = 10;
-        var tasksPerAssetCount = 5;
-        var useSqlite = false;
+        var deletePerEntityTypeCount = 1;        
+        var meterReadingsPerMeterCount = 20;
+        var tasksPerAssetCount = 1;
+        var useSqlite = true;
         var usePg = !useSqlite;
         clientIds = ["1", "2", "3", "4"];        
-        clientIds = ["1", "2"];                                                                    
+        //clientIds = ["1", "2"];                                                                    
         //clientIds = ["1"];        
         //clientIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];        
 
@@ -101,7 +101,7 @@ public abstract class Program
         {
             nodeHost = "localhost";
             //host = "192.168.10.183"; //pi5      
-            //nodeHost = "192.168.10.174"; //bbb new                          
+            nodeHost = "192.168.10.174"; //bbb new                          
             //nodeHost = "192.168.10.183"; //pi5
             //nodeHost = "192.168.10.198"; //emile-dev            
             nodePort = 3002;

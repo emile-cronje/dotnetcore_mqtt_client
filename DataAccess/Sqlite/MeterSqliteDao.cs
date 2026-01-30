@@ -210,14 +210,20 @@ public class MeterSqliteDao : SqliteDao, IMeterDao
         var connection = GetConnection();
 
         var sql = @"
-                    SELECT COALESCE(AVG(daily_rate), 0) AS average_daily_rate
-                    FROM (
-                        SELECT
-                            (reading - LAG(reading) OVER (ORDER BY reading_on)) /
-                            (JULIANDAY(reading_on) - JULIANDAY(LAG(reading_on) OVER (ORDER BY reading_on))) AS daily_rate
-                        FROM meter_reading
-                        WHERE meter_id = @meterId
-                    ) AS daily_rates";
+SELECT AVG(COALESCE(daily_rate, 0)) AS average_daily_rate
+FROM (
+    SELECT
+        (reading - LAG(reading) OVER (ORDER BY reading_on)) * 1.0
+        /
+        NULLIF(
+            julianday(date(reading_on)) -
+            julianday(date(LAG(reading_on) OVER (ORDER BY reading_on))),
+            0
+        ) AS daily_rate
+    FROM meter_reading
+    WHERE meter_id = @meterId
+) AS daily_rates;        
+                    ";
 
         await using (var cmd = new SqliteCommand(sql, connection))
         {
