@@ -50,10 +50,10 @@ public abstract class Program
         var credentials = "foo:bar";
         var entityInsertCount = 4;
         var entityUpdateCount = 1;
-        var deletePerEntityTypeCount = 1;        
-        var meterReadingsPerMeterCount = 20;
-        var tasksPerAssetCount = 1;
-        var useSqlite = true;
+        var deletePerEntityTypeCount = 3;        
+        var meterReadingsPerMeterCount = 5;
+        var tasksPerAssetCount = 2;
+        var useSqlite = false;
         var usePg = !useSqlite;
         clientIds = ["1", "2", "3", "4"];        
         //clientIds = ["1", "2"];                                                                    
@@ -75,8 +75,9 @@ public abstract class Program
         var doDelete = true;
         
         // platform
-        bool usePython = false;
+        bool usePython = true;
         bool useNode = !usePython;        
+        //useNode = true;
         bool useDotNet = false;        
         bool usePythonAndNode = usePython && useNode;        
         bool useDotNetAndNode = useDotNet && useNode;                
@@ -131,6 +132,21 @@ public abstract class Program
             ];
         }
         
+        if (usePythonAndNode)
+        {
+            nodeHost = "192.168.10.174";
+            //pythonHost = "192.168.10.115"; //esp32            
+            pythonHost = "192.168.10.120"; //stm32
+            nodePort = 3002;
+            pythonPort = 8001;
+            
+            webClientUrls =
+            [
+                ($"http://{pythonHost}:{pythonPort}"),
+                ($"http://{nodeHost}:{nodePort}"),
+                ($"http://{pythonHost}:{pythonPort}")
+            ];
+        }
       
         if (useDotNet)
         {
@@ -170,22 +186,6 @@ public abstract class Program
             ];
         }
         
-        if (usePythonAndNode)
-        {
-            nodeHost = "192.168.10.174";
-            //pythonHost = "192.168.10.115"; //esp32            
-            pythonHost = "192.168.10.174"; //stm32
-            pythonPort = 3002;            
-            pythonPort = 8001;
-            
-            webClientUrls =
-            [
-                ($"http://{pythonHost}:{pythonPort}"),
-                ($"http://{nodeHost}:{nodePort}"),
-                ($"http://{nodeHost}:{nodePort}")
-            ];
-        }
-
         if (useDotNetAndPythonAndNode)
         {
             nodeHost = "192.168.10.174";
@@ -224,8 +224,8 @@ public abstract class Program
             toDoUrlIndex = (int)WebUrl.Python;
             assetUrlIndex = (int)WebUrl.NodeTs;
             assetTaskUrlIndex = (int)WebUrl.NodeTs;       
-            meterUrlIndex = (int)WebUrl.NodeTs;        
-            meterReadingUrlIndex = (int)WebUrl.NodeTs;
+            meterUrlIndex = (int)WebUrl.Python;        
+            meterReadingUrlIndex = (int)WebUrl.Python;
         }
 
         if (useDotNetAndNode)
