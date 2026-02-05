@@ -92,11 +92,11 @@ public class MessageBrokerService : BackgroundService, IMessageBrokerService
                     group => group.Sum(x => x.Value!.GetInsertMessageIdsCount()) // Sum of counts as value
                 );
 
-            foreach (var kvp in insertCountsPerEntityType)
-            {
-                if (kvp.Value > 0)
-                    Console.WriteLine($"Insert: EntityType: {kvp.Key}, Count: {kvp.Value}");
-            }
+            // foreach (var kvp in insertCountsPerEntityType)
+            // {
+            //     if (kvp.Value > 0)
+            //         Console.WriteLine($"Insert: EntityType: {kvp.Key}, Count: {kvp.Value}");
+            // }
 
             Dictionary<EntityType, int> updateCountsPerEntityType = _testEventContainer.EntityContainers
                 .Where(x => x.Value != null) // Filter out null values
@@ -106,11 +106,11 @@ public class MessageBrokerService : BackgroundService, IMessageBrokerService
                     group => group.Sum(x => x.Value!.GetUpdateMessageIdsCount()) // Sum of counts as value
                 );
 
-            foreach (var kvp in updateCountsPerEntityType)
-            {
-                if (kvp.Value > 0)                
-                    Console.WriteLine($"Update: EntityType: {kvp.Key}, Count: {kvp.Value}");
-            }
+            // foreach (var kvp in updateCountsPerEntityType)
+            // {
+            //     if (kvp.Value > 0)                
+            //         Console.WriteLine($"Update: EntityType: {kvp.Key}, Count: {kvp.Value}");
+            // }
 
             Dictionary<EntityType, int> deleteCountsPerEntityType = _testEventContainer.EntityContainers
                 .Where(x => x.Value != null) // Filter out null values
@@ -120,11 +120,11 @@ public class MessageBrokerService : BackgroundService, IMessageBrokerService
                     group => group.Sum(x => x.Value!.GetDeleteMessageIdsCount()) // Sum of counts as value
                 );
 
-            foreach (var kvp in deleteCountsPerEntityType)
-            {
-                if (kvp.Value > 0)                
-                    Console.WriteLine($"Delete: EntityType: {kvp.Key}, Count: {kvp.Value}");
-            }
+            // foreach (var kvp in deleteCountsPerEntityType)
+            // {
+            //     if (kvp.Value > 0)                
+            //         Console.WriteLine($"Delete: EntityType: {kvp.Key}, Count: {kvp.Value}");
+            // }
 
             int allInsertMessageIdsCount =
                 _testEventContainer.EntityContainers.Sum(x =>
@@ -346,7 +346,7 @@ public class MessageBrokerService : BackgroundService, IMessageBrokerService
                 }
             }
             
-            Thread.Sleep(1000);
+            Thread.Sleep(2000);
             await Task.CompletedTask;            
         }
     }

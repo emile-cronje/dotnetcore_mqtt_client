@@ -48,11 +48,11 @@ public abstract class Program
         var dotNetPort = 8001; // c#        
         var nodePort = 3002; // nodejs - ts        
         var credentials = "foo:bar";
-        var entityInsertCount = 4;
+        var entityInsertCount = 5;
         var entityUpdateCount = 1;
-        var deletePerEntityTypeCount = 3;        
-        var meterReadingsPerMeterCount = 5;
-        var tasksPerAssetCount = 2;
+        var deletePerEntityTypeCount = 2;        
+        var meterReadingsPerMeterCount = 50;
+        var tasksPerAssetCount = 1;
         var useSqlite = false;
         var usePg = !useSqlite;
         clientIds = ["1", "2", "3", "4"];        
@@ -77,7 +77,7 @@ public abstract class Program
         // platform
         bool usePython = true;
         bool useNode = !usePython;        
-        //useNode = true;
+        useNode = true;
         bool useDotNet = false;        
         bool usePythonAndNode = usePython && useNode;        
         bool useDotNetAndNode = useDotNet && useNode;                
@@ -90,7 +90,6 @@ public abstract class Program
         int meterUrlIndex = (int)WebUrl.NodeTs;        
         int meterReadingUrlIndex = (int)WebUrl.NodeTs;
 
-       
         var webClientUrls = new List<string>
                     {
                         ($"http://{dotNetHost}:{dotNetPort}"),
@@ -102,7 +101,7 @@ public abstract class Program
         {
             nodeHost = "localhost";
             //host = "192.168.10.183"; //pi5      
-            nodeHost = "192.168.10.174"; //bbb new                          
+            nodeHost = "192.168.10.177"; //bbb new                          
             //nodeHost = "192.168.10.183"; //pi5
             //nodeHost = "192.168.10.198"; //emile-dev            
             nodePort = 3002;
@@ -119,7 +118,7 @@ public abstract class Program
         {
             pythonHost = "192.168.10.120"; //stm32
             //pythonHost = "192.168.10.115"; //pico-w            
-            //pythonHost = "192.168.10.174"; //bbb
+            //pythonHost = "192.168.10.177"; //bbb
             //pythonHost = "192.168.10.198"; //emile-dev            
             //pythonHost = "192.168.10.183"; //pi5 
             pythonPort = 8001;            
@@ -134,7 +133,7 @@ public abstract class Program
         
         if (usePythonAndNode)
         {
-            nodeHost = "192.168.10.174";
+            nodeHost = "192.168.10.177";
             //pythonHost = "192.168.10.115"; //esp32            
             pythonHost = "192.168.10.120"; //stm32
             nodePort = 3002;
@@ -143,8 +142,8 @@ public abstract class Program
             webClientUrls =
             [
                 ($"http://{pythonHost}:{pythonPort}"),
-                ($"http://{nodeHost}:{nodePort}"),
-                ($"http://{pythonHost}:{pythonPort}")
+                ($"http://{pythonHost}:{pythonPort}"),
+                ($"http://{nodeHost}:{nodePort}")
             ];
         }
       
@@ -163,7 +162,7 @@ public abstract class Program
         if (useDotNetAndNode)
         {
             dotNetHost = "localhost";
-            nodeHost = "192.168.10.174";            
+            nodeHost = "192.168.10.177";            
             
             webClientUrls =
             [
@@ -188,7 +187,7 @@ public abstract class Program
         
         if (useDotNetAndPythonAndNode)
         {
-            nodeHost = "192.168.10.174";
+            nodeHost = "192.168.10.177";
 //            pythonHost = "192.168.10.115"; //esp32            
             pythonHost = "192.168.10.120"; //stm32            
             dotNetHost = "localhost";            
@@ -222,10 +221,10 @@ public abstract class Program
         if (usePythonAndNode)
         {
             toDoUrlIndex = (int)WebUrl.Python;
-            assetUrlIndex = (int)WebUrl.NodeTs;
-            assetTaskUrlIndex = (int)WebUrl.NodeTs;       
-            meterUrlIndex = (int)WebUrl.Python;        
-            meterReadingUrlIndex = (int)WebUrl.Python;
+            assetUrlIndex = (int)WebUrl.Python;
+            assetTaskUrlIndex = (int)WebUrl.Python;       
+            meterUrlIndex = (int)WebUrl.NodeTs;        
+            meterReadingUrlIndex = (int)WebUrl.NodeTs;
         }
 
         if (useDotNetAndNode)
@@ -301,8 +300,8 @@ public abstract class Program
         var mqttBrokers = new List<(string, string)>
         {
             ("192.168.10.124", "pib plus"),
-            ("192.168.10.135", "pib"),
-            ("192.168.10.174", "bbb")            
+            ("192.168.10.135", "pib")
+            //("192.168.10.177", "bbb")            
         };
 
         var mqttSessionId = Guid.NewGuid();
